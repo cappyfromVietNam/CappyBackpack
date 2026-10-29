@@ -1,5 +1,7 @@
 package com.quocdev.capybackpack.command;
 
+import com.quocdev.capybackpack.gui.RecipeEntry;
+import com.quocdev.capybackpack.gui.RecipeGUI;
 import com.quocdev.capybackpack.manager.BackpackManager;
 import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackModule;
@@ -23,11 +25,13 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
     private final JavaPlugin plugin;
     private final BackpackManager manager;
     private final MessageManager messageManager;
+    private final RecipeGUI recipeGUI;
 
-    public CappyBackpackCommand(JavaPlugin plugin, BackpackManager manager, MessageManager messageManager) {
+    public CappyBackpackCommand(JavaPlugin plugin, BackpackManager manager, MessageManager messageManager, RecipeGUI recipeGUI) {
         this.plugin = plugin;
         this.manager = manager;
         this.messageManager = messageManager;
+        this.recipeGUI = recipeGUI;
     }
 
     @Override
@@ -40,6 +44,25 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         String sub = args[0].toLowerCase();
 
         switch (sub) {
+            case "recipe":
+                if (!sender.hasPermission("cappybackpack.use")) {
+                    messageManager.send(sender, "no_permission");
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    messageManager.send(sender, "players_only");
+                    return true;
+                }
+                if (args.length > 1) {
+                    RecipeEntry entry = recipeGUI.getRecipeMap().get(args[1].toLowerCase());
+                    if (entry != null) {
+                        recipeGUI.openRecipe(player, entry);
+                        return true;
+                    }
+                }
+                recipeGUI.openCatalog(player);
+                return true;
+
             case "reload":
                 if (!sender.hasPermission("cappybackpack.admin")) {
                     messageManager.send(sender, "no_permission");
@@ -142,6 +165,7 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(messageManager.get("help.header"));
+        sender.sendMessage(messageManager.get("help.recipe"));
         sender.sendMessage(messageManager.get("help.get"));
         sender.sendMessage(messageManager.get("help.upgrade"));
         sender.sendMessage(messageManager.get("help.module"));
@@ -151,15 +175,25 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission("cappybackpack.admin")) {
+        if (!sender.hasPermission("cappybackpack.use")) {
             return Collections.emptyList();
         }
 
         if (args.length == 1) {
-            return filter(Arrays.asList("get", "upgrade", "module", "remover", "reload"), args[0]);
+            List<String> subs = new ArrayList<>(Arrays.asList("recipe", "get", "upgrade", "module", "remover", "reload"));
+            if (!sender.hasPermission("cappybackpack.admin")) {
+                subs = Collections.singletonList("recipe");
+            }
+            return filter(subs, args[0]);
         }
 
         if (args.length == 2) {
+            if ("recipe".equalsIgnoreCase(args[0])) {
+                return filter(new ArrayList<>(recipeGUI.getRecipeMap().keySet()), args[1]);
+            }
+            if (!sender.hasPermission("cappybackpack.admin")) {
+                return Collections.emptyList();
+            }
             if ("get".equalsIgnoreCase(args[0])) {
                 return filter(Arrays.stream(BackpackTier.values()).map(BackpackTier::getId).collect(Collectors.toList()), args[1]);
             }
