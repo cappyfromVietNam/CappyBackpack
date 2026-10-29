@@ -21,3 +21,4 @@ permissions:
   cappybackpack.use:
     description: Allows using and upgrading backpacks
     default: true
+

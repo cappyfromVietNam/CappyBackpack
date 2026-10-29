@@ -25,6 +25,12 @@ public class BackpackModelTest {
         assertEquals(27, BackpackTier.GOLD.getSlots());
         assertEquals(36, BackpackTier.DIAMOND.getSlots());
         assertEquals(54, BackpackTier.NETHERITE.getSlots());
+
+        assertEquals(org.bukkit.Material.BUNDLE, BackpackTier.BASE.getBundleMaterial());
+        assertEquals(org.bukkit.Material.WHITE_BUNDLE, BackpackTier.IRON.getBundleMaterial());
+        assertEquals(org.bukkit.Material.YELLOW_BUNDLE, BackpackTier.GOLD.getBundleMaterial());
+        assertEquals(org.bukkit.Material.LIGHT_BLUE_BUNDLE, BackpackTier.DIAMOND.getBundleMaterial());
+        assertEquals(org.bukkit.Material.BLACK_BUNDLE, BackpackTier.NETHERITE.getBundleMaterial());
     }
 
     @Test
@@ -49,3 +55,4 @@ public class BackpackModelTest {
         assertFalse(data.hasModule(BackpackModule.AUTO_FOOD));
     }
 }
+

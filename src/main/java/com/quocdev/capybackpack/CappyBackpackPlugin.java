@@ -3,9 +3,11 @@ package com.quocdev.capybackpack;
 import com.quocdev.capybackpack.command.CappyBackpackCommand;
 import com.quocdev.capybackpack.gui.BackpackGUI;
 import com.quocdev.capybackpack.gui.BackpackHolder;
+import com.quocdev.capybackpack.listener.BackpackCraftListener;
 import com.quocdev.capybackpack.listener.BackpackInteractListener;
 import com.quocdev.capybackpack.listener.BackpackInventoryListener;
 import com.quocdev.capybackpack.manager.BackpackManager;
+import com.quocdev.capybackpack.manager.BackpackRecipeManager;
 import com.quocdev.capybackpack.task.BackpackTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -17,6 +19,7 @@ import org.bukkit.scheduler.BukkitTask;
 public class CappyBackpackPlugin extends JavaPlugin {
 
     private BackpackManager backpackManager;
+    private BackpackRecipeManager recipeManager;
     private BackpackGUI backpackGUI;
     private BukkitTask backpackTask;
 
@@ -26,10 +29,15 @@ public class CappyBackpackPlugin extends JavaPlugin {
 
         this.backpackManager = new BackpackManager(this);
         this.backpackGUI = new BackpackGUI(backpackManager);
+        this.recipeManager = new BackpackRecipeManager(this, backpackManager);
+
+        // Register Crafting Recipes
+        this.recipeManager.registerRecipes();
 
         // Register Listeners
         getServer().getPluginManager().registerEvents(new BackpackInteractListener(this, backpackManager, backpackGUI), this);
         getServer().getPluginManager().registerEvents(new BackpackInventoryListener(this, backpackManager), this);
+        getServer().getPluginManager().registerEvents(new BackpackCraftListener(backpackManager), this);
 
         // Register Commands
         PluginCommand cmd = getCommand("cappybackpack");
@@ -74,3 +82,4 @@ public class CappyBackpackPlugin extends JavaPlugin {
         return backpackGUI;
     }
 }
+

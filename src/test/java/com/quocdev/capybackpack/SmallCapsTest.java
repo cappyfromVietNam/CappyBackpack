@@ -37,3 +37,4 @@ public class SmallCapsTest {
         assertEquals("18 ꜱʟᴏᴛꜱ · 100%", converted);
     }
 }
+

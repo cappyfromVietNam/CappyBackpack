@@ -12,3 +12,4 @@ modules:
 settings:
   sound_effects: true
   anti_nesting: true
+

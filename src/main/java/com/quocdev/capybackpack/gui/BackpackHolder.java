@@ -52,3 +52,4 @@ public class BackpackHolder implements InventoryHolder {
         return offhand;
     }
 }
+

@@ -45,8 +45,12 @@ public class BackpackManager {
         this.keyModuleType = new NamespacedKey(plugin, "module_type");
     }
 
+    public static boolean isBundleMaterial(Material material) {
+        return material != null && (material == Material.BUNDLE || material.name().endsWith("_BUNDLE"));
+    }
+
     public boolean isBackpack(ItemStack item) {
-        if (item == null || item.getType() != Material.BUNDLE || !item.hasItemMeta()) {
+        if (item == null || !isBundleMaterial(item.getType()) || !item.hasItemMeta()) {
             return false;
         }
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
@@ -128,6 +132,10 @@ public class BackpackManager {
 
     public void saveBackpackData(ItemStack item, BackpackData data) {
         if (item == null || data == null) return;
+
+        // Ensure the bundle item matches the tier color
+        item.setType(data.getTier().getBundleMaterial());
+
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
 
@@ -154,7 +162,7 @@ public class BackpackManager {
     }
 
     public ItemStack createBackpack(BackpackTier tier) {
-        ItemStack item = new ItemStack(Material.BUNDLE);
+        ItemStack item = new ItemStack(tier.getBundleMaterial());
         ItemMeta meta = item.getItemMeta();
         UUID id = UUID.randomUUID();
 
@@ -278,3 +286,4 @@ public class BackpackManager {
         activeViewers.clear();
     }
 }
+
