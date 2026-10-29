@@ -1,0 +1,23 @@
+name: CappyBackpack
+version: '1.0.0'
+main: com.quocdev.capybackpack.CappyBackpackPlugin
+api-version: '1.21'
+author: quocdev
+description: Minimalist bundle backpacks with upgrades and modules.
+
+commands:
+  cappybackpack:
+    description: Manage CappyBackpacks
+    aliases:
+      - cb
+      - backpack
+    permission: cappybackpack.admin
+    usage: /<command> [get|upgrade|module|reload]
+
+permissions:
+  cappybackpack.admin:
+    description: Allows giving backpacks and reloading config
+    default: op
+  cappybackpack.use:
+    description: Allows using and upgrading backpacks
+    default: true

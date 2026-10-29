@@ -1,0 +1,14 @@
+# CappyBackpack Configuration
+
+modules:
+  auto_food:
+    enabled: true
+    hunger_threshold: 14 # Triggers when player hunger is at or below this value (out of 20)
+    check_interval_ticks: 40 # 2 seconds
+  furnace:
+    enabled: true
+    check_interval_ticks: 60 # 3 seconds
+
+settings:
+  sound_effects: true
+  anti_nesting: true
