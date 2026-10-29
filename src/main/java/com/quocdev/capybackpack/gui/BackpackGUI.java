@@ -1,6 +1,7 @@
 package com.quocdev.capybackpack.gui;
 
 import com.quocdev.capybackpack.manager.BackpackManager;
+import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackData;
 import com.quocdev.capybackpack.model.BackpackTier;
 import com.quocdev.capybackpack.util.TextUtil;
@@ -16,9 +17,11 @@ import java.util.UUID;
 public class BackpackGUI {
 
     private final BackpackManager manager;
+    private final MessageManager messageManager;
 
-    public BackpackGUI(BackpackManager manager) {
+    public BackpackGUI(BackpackManager manager, MessageManager messageManager) {
         this.manager = manager;
+        this.messageManager = messageManager;
     }
 
     public boolean open(Player player, ItemStack backpackItem, int sourceSlot, boolean isOffhand) {
@@ -33,7 +36,7 @@ public class BackpackGUI {
 
         UUID existingViewer = manager.getViewer(data.getId());
         if (existingViewer != null && !existingViewer.equals(player.getUniqueId())) {
-            player.sendMessage(TextUtil.parse("<#E57373>ʙᴀᴄᴋᴘᴀᴄᴋ ɪs ᴀʟʀᴇᴀᴅʏ ᴏᴘᴇɴ"));
+            messageManager.send(player, "backpack_already_open");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
             return false;
         }

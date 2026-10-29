@@ -1,0 +1,33 @@
+# CappyBackpack Messages
+# Styled in Small-Caps and Minimalist formatting (No bold format)
+
+messages:
+  backpack_already_open: "<#E57373>ʙᴀᴄᴋᴘᴀᴄᴋ ɪs ᴀʟʀᴇᴀᴅʏ ᴏᴘᴇɴ"
+  cannot_nest_backpack: "<#E57373>ᴄᴀɴɴᴏᴛ ɴᴇsᴛ ʙᴀᴄᴋᴘᴀᴄᴋs"
+  no_permission: "<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"
+  players_only: "<#E57373>ᴘʟᴀʏᴇʀs ᴏɴʟʏ"
+  config_reloaded: "<#A5D6A7>ᴄᴏɴғɪɢ ʀᴇʟᴏᴀᴅᴇᴅ"
+
+  # Upgrades
+  upgrade_applied: "<#A5D6A7>ᴜᴘɢʀᴀᴅᴇ ᴀᴘᴘʟɪᴇᴅ  <#9E9E9E>·  <color>%tier% (%slots% sʟᴏᴛs)"
+  upgrade_invalid: "<#E57373>ɪɴᴠᴀʟɪᴅ ᴜᴘɢʀᴀᴅᴇ  <#9E9E9E>·  <#E0E0E0>ʀᴇǫᴜɪʀᴇs %required%"
+  upgrade_already_max: "<#E57373>ᴀʟʀᴇᴀᴅʏ ᴀᴛ ᴏʀ ᴀʙᴏᴠᴇ ᴛʜɪs ᴛɪᴇʀ"
+  base_has_no_upgrade: "<#E57373>ʙᴀsᴇ ʜᴀs ɴᴏ ᴜᴘɢʀᴀᴅᴇ ɪᴛᴇᴍ"
+
+  # Modules
+  module_installed: "<#A5D6A7>ᴍᴏᴅᴜʟᴇ ɪɴsᴛᴀʟʟᴇᴅ  <#9E9E9E>·  <color>%module%"
+  module_already_installed: "<#E57373>ᴍᴏᴅᴜʟᴇ ᴀʟʀᴇᴀᴅʏ ɪɴsᴛᴀʟʟᴇᴅ"
+  unknown_module: "<#E57373>ᴜɴᴋɴᴏᴡɴ ᴍᴏᴅᴜʟᴇ"
+
+  # Commands
+  given_backpack: "<#A5D6A7>ɢɪᴠᴇɴ ʙᴀᴄᴋᴘᴀᴄᴋ  <#9E9E9E>·  <color>%tier%"
+  given_upgrade: "<#A5D6A7>ɢɪᴠᴇɴ ᴜᴘɢʀᴀᴅᴇ  <#9E9E9E>·  <color>%tier%"
+  given_module: "<#A5D6A7>ɢɪᴠᴇɴ ᴍᴏᴅᴜʟᴇ  <#9E9E9E>·  <color>%module%"
+
+  # Help Menu
+  help:
+    header: "<#9E9E9E>— <#ECEFF1>ᴄᴀᴘᴘʏ ʙᴀᴄᴋᴘᴀᴄᴋ <#9E9E9E>—"
+    get: "<#B0BEC5>/ᴄʙ ɢᴇᴛ [ᴛɪᴇʀ] <#757575>· ɢɪᴠᴇ ʙᴀᴄᴋᴘᴀᴄᴋ"
+    upgrade: "<#B0BEC5>/ᴄʙ ᴜᴘɢʀᴀᴅᴇ <ᴛɪᴇʀ> <#757575>· ɢɪᴠᴇ ᴜᴘɢʀᴀᴅᴇ ɪᴛᴇᴍ"
+    module: "<#B0BEC5>/ᴄʙ ᴍᴏᴅᴜʟᴇ <ᴛʏᴘᴇ> <#757575>· ɢɪᴠᴇ ᴍᴏᴅᴜʟᴇ ɪᴛᴇᴍ"
+    reload: "<#B0BEC5>/ᴄʙ ʀᴇʟᴏᴀᴅ <#757575>· ʀᴇʟᴏᴀᴅ ᴄᴏɴғɪɢ"

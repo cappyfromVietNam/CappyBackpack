@@ -2,10 +2,10 @@ package com.quocdev.capybackpack.listener;
 
 import com.quocdev.capybackpack.gui.BackpackGUI;
 import com.quocdev.capybackpack.manager.BackpackManager;
+import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackData;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
-import com.quocdev.capybackpack.util.TextUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -14,7 +14,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -26,11 +25,13 @@ public class BackpackInteractListener implements Listener {
 
     private final JavaPlugin plugin;
     private final BackpackManager manager;
+    private final MessageManager messageManager;
     private final BackpackGUI gui;
 
-    public BackpackInteractListener(JavaPlugin plugin, BackpackManager manager, BackpackGUI gui) {
+    public BackpackInteractListener(JavaPlugin plugin, BackpackManager manager, MessageManager messageManager, BackpackGUI gui) {
         this.plugin = plugin;
         this.manager = manager;
+        this.messageManager = messageManager;
         this.gui = gui;
     }
 
@@ -49,7 +50,7 @@ public class BackpackInteractListener implements Listener {
         Player player = event.getPlayer();
 
         if (!player.hasPermission("cappybackpack.use")) {
-            player.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+            messageManager.send(player, "no_permission");
             return;
         }
 
@@ -73,7 +74,7 @@ public class BackpackInteractListener implements Listener {
             event.setCancelled(true);
 
             if (!player.hasPermission("cappybackpack.use")) {
-                player.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+                messageManager.send(player, "no_permission");
                 return;
             }
 
@@ -88,16 +89,17 @@ public class BackpackInteractListener implements Listener {
                     // Valid upgrade!
                     consumeCursor(event, cursor);
                     data.setTier(targetTier);
+                    current.setType(targetTier.getBundleMaterial());
                     manager.saveBackpackData(current, data);
 
                     player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.7f, 1.1f);
-                    player.sendMessage(TextUtil.parse("<#A5D6A7>ᴜᴘɢʀᴀᴅᴇ ᴀᴘᴘʟɪᴇᴅ  ·  <" + targetTier.getColorHex() + ">" + targetTier.getId() + " (" + targetTier.getSlots() + " sʟᴏᴛs)"));
+                    messageManager.send(player, "upgrade_applied", "%tier%", targetTier.getId(), "%slots%", String.valueOf(targetTier.getSlots()), "<color>", "<" + targetTier.getColorHex() + ">");
                 } else {
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
                     if (data.getTier() == targetTier || data.getTier().ordinal() >= targetTier.ordinal()) {
-                        player.sendMessage(TextUtil.parse("<#E57373>ᴀʟʀᴇᴀᴅʏ ᴀᴛ ᴏʀ ᴀʙᴏᴠᴇ ᴛʜɪs ᴛɪᴇʀ"));
+                        messageManager.send(player, "upgrade_already_max");
                     } else {
-                        player.sendMessage(TextUtil.parse("<#E57373>ɪɴᴠᴀʟɪᴅ ᴜᴘɢʀᴀᴅᴇ  ·  ʀᴇǫᴜɪʀᴇs " + targetTier.getPreviousTierId()));
+                        messageManager.send(player, "upgrade_invalid", "%required%", targetTier.getPreviousTierId());
                     }
                 }
                 return;
@@ -109,14 +111,14 @@ public class BackpackInteractListener implements Listener {
 
                 if (data.hasModule(module)) {
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
-                    player.sendMessage(TextUtil.parse("<#E57373>ᴍᴏᴅᴜʟᴇ ᴀʟʀᴇᴀᴅʏ ɪɴsᴛᴀʟʟᴇᴅ"));
+                    messageManager.send(player, "module_already_installed");
                 } else {
                     consumeCursor(event, cursor);
                     data.addModule(module);
                     manager.saveBackpackData(current, data);
 
                     player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.2f);
-                    player.sendMessage(TextUtil.parse("<#A5D6A7>ᴍᴏᴅᴜʟᴇ ɪɴsᴛᴀʟʟᴇᴅ  ·  <" + module.getColorHex() + ">" + module.getId()));
+                    messageManager.send(player, "module_installed", "%module%", module.getId(), "<color>", "<" + module.getColorHex() + ">");
                 }
                 return;
             }

@@ -1,9 +1,9 @@
 package com.quocdev.capybackpack.command;
 
 import com.quocdev.capybackpack.manager.BackpackManager;
+import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
-import com.quocdev.capybackpack.util.TextUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -22,10 +22,12 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
 
     private final JavaPlugin plugin;
     private final BackpackManager manager;
+    private final MessageManager messageManager;
 
-    public CappyBackpackCommand(JavaPlugin plugin, BackpackManager manager) {
+    public CappyBackpackCommand(JavaPlugin plugin, BackpackManager manager, MessageManager messageManager) {
         this.plugin = plugin;
         this.manager = manager;
+        this.messageManager = messageManager;
     }
 
     @Override
@@ -40,20 +42,21 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "reload":
                 if (!sender.hasPermission("cappybackpack.admin")) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+                    messageManager.send(sender, "no_permission");
                     return true;
                 }
                 plugin.reloadConfig();
-                sender.sendMessage(TextUtil.parse("<#A5D6A7>ᴄᴏɴғɪɢ ʀᴇʟᴏᴀᴅᴇᴅ"));
+                messageManager.reload();
+                messageManager.send(sender, "config_reloaded");
                 return true;
 
             case "get":
                 if (!sender.hasPermission("cappybackpack.admin")) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+                    messageManager.send(sender, "no_permission");
                     return true;
                 }
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ᴘʟᴀʏᴇʀs ᴏɴʟʏ"));
+                    messageManager.send(sender, "players_only");
                     return true;
                 }
                 BackpackTier tier = BackpackTier.BASE;
@@ -62,53 +65,53 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                 }
                 ItemStack backpack = manager.createBackpack(tier);
                 giveOrDrop(player, backpack);
-                player.sendMessage(TextUtil.parse("<#A5D6A7>ɢɪᴠᴇɴ ʙᴀᴄᴋᴘᴀᴄᴋ  <" + tier.getColorHex() + ">· " + tier.getId()));
+                messageManager.send(player, "given_backpack", "%tier%", tier.getId(), "<color>", "<" + tier.getColorHex() + ">");
                 return true;
 
             case "upgrade":
                 if (!sender.hasPermission("cappybackpack.admin")) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+                    messageManager.send(sender, "no_permission");
                     return true;
                 }
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ᴘʟᴀʏᴇʀs ᴏɴʟʏ"));
+                    messageManager.send(sender, "players_only");
                     return true;
                 }
                 if (args.length < 2) {
-                    player.sendMessage(TextUtil.parse("<#E57373>ᴜsᴀɢᴇ: /ᴄʙ ᴜᴘɢʀᴀᴅᴇ <ɪʀᴏɴ|ɢᴏʟᴅ|ᴅɪᴀᴍᴏɴᴅ|ɴᴇᴛʜᴇʀɪᴛᴇ>"));
+                    sender.sendMessage(messageManager.get("help.upgrade"));
                     return true;
                 }
                 BackpackTier targetTier = BackpackTier.fromString(args[1]);
                 if (targetTier == BackpackTier.BASE) {
-                    player.sendMessage(TextUtil.parse("<#E57373>ʙᴀsᴇ ʜᴀs ɴᴏ ᴜᴘɢʀᴀᴅᴇ ɪᴛᴇᴍ"));
+                    messageManager.send(player, "base_has_no_upgrade");
                     return true;
                 }
                 ItemStack upgrade = manager.createUpgrade(targetTier);
                 giveOrDrop(player, upgrade);
-                player.sendMessage(TextUtil.parse("<#A5D6A7>ɢɪᴠᴇɴ ᴜᴘɢʀᴀᴅᴇ  <" + targetTier.getColorHex() + ">· " + targetTier.getId()));
+                messageManager.send(player, "given_upgrade", "%tier%", targetTier.getId(), "<color>", "<" + targetTier.getColorHex() + ">");
                 return true;
 
             case "module":
                 if (!sender.hasPermission("cappybackpack.admin")) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ɴᴏ ᴘᴇʀᴍɪssɪᴏɴ"));
+                    messageManager.send(sender, "no_permission");
                     return true;
                 }
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(TextUtil.parse("<#E57373>ᴘʟᴀʏᴇʀs ᴏɴʟʏ"));
+                    messageManager.send(sender, "players_only");
                     return true;
                 }
                 if (args.length < 2) {
-                    player.sendMessage(TextUtil.parse("<#E57373>ᴜsᴀɢᴇ: /ᴄʙ ᴍᴏᴅᴜʟᴇ <ғᴜʀɴᴀᴄᴇ|ᴀᴜᴛᴏғᴏᴏᴅ>"));
+                    sender.sendMessage(messageManager.get("help.module"));
                     return true;
                 }
                 BackpackModule mod = BackpackModule.fromString(args[1]);
                 if (mod == null) {
-                    player.sendMessage(TextUtil.parse("<#E57373>ᴜɴᴋɴᴏᴡɴ ᴍᴏᴅᴜʟᴇ"));
+                    messageManager.send(player, "unknown_module");
                     return true;
                 }
                 ItemStack moduleItem = manager.createModule(mod);
                 giveOrDrop(player, moduleItem);
-                player.sendMessage(TextUtil.parse("<#A5D6A7>ɢɪᴠᴇɴ ᴍᴏᴅᴜʟᴇ  <" + mod.getColorHex() + ">· " + mod.getId()));
+                messageManager.send(player, "given_module", "%module%", mod.getId(), "<color>", "<" + mod.getColorHex() + ">");
                 return true;
 
             default:
@@ -124,11 +127,11 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(TextUtil.parse("<#9E9E9E>— <#ECEFF1>ᴄᴀᴘᴘʏ ʙᴀᴄᴋᴘᴀᴄᴋ <#9E9E9E>—"));
-        sender.sendMessage(TextUtil.parse("<#B0BEC5>/ᴄʙ ɢᴇᴛ [ᴛɪᴇʀ] <#757575>· ɢɪᴠᴇ ʙᴀᴄᴋᴘᴀᴄᴋ"));
-        sender.sendMessage(TextUtil.parse("<#B0BEC5>/ᴄʙ ᴜᴘɢʀᴀᴅᴇ <ᴛɪᴇʀ> <#757575>· ɢɪᴠᴇ ᴜᴘɢʀᴀᴅᴇ ɪᴛᴇᴍ"));
-        sender.sendMessage(TextUtil.parse("<#B0BEC5>/ᴄʙ ᴍᴏᴅᴜʟᴇ <ᴛʏᴘᴇ> <#757575>· ɢɪᴠᴇ ᴍᴏᴅᴜʟᴇ ɪᴛᴇᴍ"));
-        sender.sendMessage(TextUtil.parse("<#B0BEC5>/ᴄʙ ʀᴇʟᴏᴀᴅ <#757575>· ʀᴇʟᴏᴀᴅ ᴄᴏɴғɪɢ"));
+        sender.sendMessage(messageManager.get("help.header"));
+        sender.sendMessage(messageManager.get("help.get"));
+        sender.sendMessage(messageManager.get("help.upgrade"));
+        sender.sendMessage(messageManager.get("help.module"));
+        sender.sendMessage(messageManager.get("help.reload"));
     }
 
     @Override
@@ -170,4 +173,3 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         return matches;
     }
 }
-

@@ -12,8 +12,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.SmithingInventory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +27,48 @@ public class BackpackCraftListener implements Listener {
 
     public BackpackCraftListener(BackpackManager manager) {
         this.manager = manager;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPrepareSmithing(PrepareSmithingEvent event) {
+        SmithingInventory inv = event.getInventory();
+        ItemStack template = inv.getItem(0);
+        ItemStack base = inv.getItem(1);
+        ItemStack addition = inv.getItem(2);
+
+        if (base == null || !manager.isBackpack(base)) {
+            return;
+        }
+
+        // Only allow upgrading Diamond Backpack with Netherite Upgrade Template and Netherite Ingot
+        if (template != null && template.getType() == Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE
+                && addition != null && addition.getType() == Material.NETHERITE_INGOT) {
+            BackpackData data = manager.loadBackpackData(base);
+            if (data != null && data.getTier() == BackpackTier.DIAMOND) {
+                ItemStack result = base.clone();
+                BackpackData resultData = manager.loadBackpackData(result);
+                resultData.setTier(BackpackTier.NETHERITE);
+                result.setType(BackpackTier.NETHERITE.getBundleMaterial());
+                manager.saveBackpackData(result, resultData);
+                event.setResult(result);
+                return;
+            }
+        }
+
+        // Disallow any other smithing involving a backpack
+        event.setResult(null);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onSmithItem(SmithItemEvent event) {
+        ItemStack result = event.getInventory().getResult();
+        if (result == null || !manager.isBackpack(result)) {
+            return;
+        }
+
+        if (event.getWhoClicked() instanceof Player player) {
+            player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.8f, 1.0f);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -71,6 +116,7 @@ public class BackpackCraftListener implements Listener {
                 ItemStack result = foundBackpack.clone();
                 BackpackData resultData = manager.loadBackpackData(result);
                 resultData.setTier(targetTier);
+                result.setType(targetTier.getBundleMaterial());
                 manager.saveBackpackData(result, resultData);
                 inv.setResult(result);
                 return;
@@ -94,7 +140,7 @@ public class BackpackCraftListener implements Listener {
             return;
         }
 
-        // Check 3: 3x3 Grid - Backpack in center (index 4) + 8 surrounding mineral items
+        // Check 3: 3x3 Grid - Backpack in center (index 4) + 8 surrounding mineral items (Iron, Gold, Diamond)
         if (matrix.length == 9 && matrix[4] != null && manager.isBackpack(matrix[4])) {
             Material surroundMat = getSurroundingMaterial(matrix);
             if (surroundMat != null) {
@@ -103,6 +149,7 @@ public class BackpackCraftListener implements Listener {
                     ItemStack result = foundBackpack.clone();
                     BackpackData resultData = manager.loadBackpackData(result);
                     resultData.setTier(targetTier);
+                    result.setType(targetTier.getBundleMaterial());
                     manager.saveBackpackData(result, resultData);
                     inv.setResult(result);
                     return;
@@ -147,7 +194,6 @@ public class BackpackCraftListener implements Listener {
         if (mat == Material.IRON_INGOT) return BackpackTier.IRON;
         if (mat == Material.GOLD_INGOT) return BackpackTier.GOLD;
         if (mat == Material.DIAMOND) return BackpackTier.DIAMOND;
-        if (mat == Material.NETHERITE_INGOT) return BackpackTier.NETHERITE;
         return null;
     }
 }

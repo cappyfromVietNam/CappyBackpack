@@ -2,8 +2,8 @@ package com.quocdev.capybackpack.listener;
 
 import com.quocdev.capybackpack.gui.BackpackHolder;
 import com.quocdev.capybackpack.manager.BackpackManager;
+import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackData;
-import com.quocdev.capybackpack.util.TextUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -26,10 +26,12 @@ public class BackpackInventoryListener implements Listener {
 
     private final JavaPlugin plugin;
     private final BackpackManager manager;
+    private final MessageManager messageManager;
 
-    public BackpackInventoryListener(JavaPlugin plugin, BackpackManager manager) {
+    public BackpackInventoryListener(JavaPlugin plugin, BackpackManager manager, MessageManager messageManager) {
         this.plugin = plugin;
         this.manager = manager;
+        this.messageManager = messageManager;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -76,7 +78,7 @@ public class BackpackInventoryListener implements Listener {
         // Case A: Clicking inside backpack with a backpack cursor
         if (rawSlot < topSize && manager.isBackpack(cursor)) {
             event.setCancelled(true);
-            player.sendMessage(TextUtil.parse("<#E57373>ᴄᴀɴɴᴏᴛ ɴᴇsᴛ ʙᴀᴄᴋᴘᴀᴄᴋs"));
+            messageManager.send(player, "cannot_nest_backpack");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
             return;
         }
@@ -84,7 +86,7 @@ public class BackpackInventoryListener implements Listener {
         // Case B: Shift-clicking a backpack from player inventory into the backpack
         if (rawSlot >= topSize && event.isShiftClick() && manager.isBackpack(current)) {
             event.setCancelled(true);
-            player.sendMessage(TextUtil.parse("<#E57373>ᴄᴀɴɴᴏᴛ ɴᴇsᴛ ʙᴀᴄᴋᴘᴀᴄᴋs"));
+            messageManager.send(player, "cannot_nest_backpack");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
             return;
         }
@@ -95,7 +97,7 @@ public class BackpackInventoryListener implements Listener {
             ItemStack hotbarItem = player.getInventory().getItem(hotbarSlot);
             if (manager.isBackpack(hotbarItem)) {
                 event.setCancelled(true);
-                player.sendMessage(TextUtil.parse("<#E57373>ᴄᴀɴɴᴏᴛ ɴᴇsᴛ ʙᴀᴄᴋᴘᴀᴄᴋs"));
+                messageManager.send(player, "cannot_nest_backpack");
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
                 return;
             }
@@ -123,7 +125,7 @@ public class BackpackInventoryListener implements Listener {
             for (int slot : event.getRawSlots()) {
                 if (slot < topSize) {
                     event.setCancelled(true);
-                    player.sendMessage(TextUtil.parse("<#E57373>ᴄᴀɴɴᴏᴛ ɴᴇsᴛ ʙᴀᴄᴋᴘᴀᴄᴋs"));
+                    messageManager.send(player, "cannot_nest_backpack");
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
                     return;
                 }
