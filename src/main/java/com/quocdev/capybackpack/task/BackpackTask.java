@@ -6,6 +6,8 @@ import com.quocdev.capybackpack.model.BackpackModule;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +27,8 @@ public class BackpackTask extends BukkitRunnable {
     private static final Map<Material, Integer> FUEL_MAP = new EnumMap<>(Material.class);
     // Standard Food nutrition values
     private static final Map<Material, FoodValue> FOOD_MAP = new EnumMap<>(Material.class);
+    // Standard Compactor map (9 materials -> 1 block)
+    private static final Map<Material, Material> COMPACT_MAP = new EnumMap<>(Material.class);
 
     // Food blacklist
     private static final Set<Material> FOOD_BLACKLIST = EnumSet.of(
@@ -103,6 +107,20 @@ public class BackpackTask extends BukkitRunnable {
         FOOD_MAP.put(Material.GLOW_BERRIES, new FoodValue(2, 0.4f));
         FOOD_MAP.put(Material.MELON_SLICE, new FoodValue(2, 1.2f));
         FOOD_MAP.put(Material.DRIED_KELP, new FoodValue(1, 0.6f));
+
+        // Compactor Recipes (9 items -> 1 block)
+        COMPACT_MAP.put(Material.IRON_INGOT, Material.IRON_BLOCK);
+        COMPACT_MAP.put(Material.GOLD_INGOT, Material.GOLD_BLOCK);
+        COMPACT_MAP.put(Material.COPPER_INGOT, Material.COPPER_BLOCK);
+        COMPACT_MAP.put(Material.COAL, Material.COAL_BLOCK);
+        COMPACT_MAP.put(Material.REDSTONE, Material.REDSTONE_BLOCK);
+        COMPACT_MAP.put(Material.LAPIS_LAZULI, Material.LAPIS_BLOCK);
+        COMPACT_MAP.put(Material.DIAMOND, Material.DIAMOND_BLOCK);
+        COMPACT_MAP.put(Material.EMERALD, Material.EMERALD_BLOCK);
+        COMPACT_MAP.put(Material.RAW_IRON, Material.RAW_IRON_BLOCK);
+        COMPACT_MAP.put(Material.RAW_GOLD, Material.RAW_GOLD_BLOCK);
+        COMPACT_MAP.put(Material.RAW_COPPER, Material.RAW_COPPER_BLOCK);
+        COMPACT_MAP.put(Material.NETHERITE_INGOT, Material.NETHERITE_BLOCK);
     }
 
     public BackpackTask(JavaPlugin plugin, BackpackManager manager) {
@@ -114,12 +132,10 @@ public class BackpackTask extends BukkitRunnable {
     public void run() {
         tickCounter += 20;
 
-        boolean runAutoFood = (tickCounter % 40 == 0); // Every 2s
-        boolean runFurnace = (tickCounter % 60 == 0);  // Every 3s
-
-        if (!runAutoFood && !runFurnace) {
-            return;
-        }
+        boolean runMagnet = true;                     // Every 1s (20 ticks)
+        boolean runAutoFood = (tickCounter % 40 == 0); // Every 2s (40 ticks)
+        boolean runFurnace = (tickCounter % 60 == 0);  // Every 3s (60 ticks)
+        boolean runCompactor = (tickCounter % 60 == 0);// Every 3s (60 ticks)
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!player.isValid() || player.isDead()) {
@@ -132,7 +148,7 @@ public class BackpackTask extends BukkitRunnable {
                 }
 
                 BackpackData data = manager.loadBackpackData(item);
-                if (data == null) {
+                if (data == null || !data.hasAnyModule()) {
                     continue;
                 }
 
@@ -143,16 +159,30 @@ public class BackpackTask extends BukkitRunnable {
 
                 boolean modified = false;
 
-                // 1. Process AutoFood
+                // 1. Process Magnet (Every 1s)
+                if (runMagnet && data.hasModule(BackpackModule.MAGNET)) {
+                    if (processMagnet(player, data)) {
+                        modified = true;
+                    }
+                }
+
+                // 2. Process AutoFood (Every 2s)
                 if (runAutoFood && data.hasModule(BackpackModule.AUTO_FOOD)) {
                     if (processAutoFood(player, data)) {
                         modified = true;
                     }
                 }
 
-                // 2. Process Furnace
+                // 3. Process Furnace (Every 3s)
                 if (runFurnace && data.hasModule(BackpackModule.FURNACE)) {
                     if (processFurnace(player, data)) {
+                        modified = true;
+                    }
+                }
+
+                // 4. Process Compactor (Every 3s)
+                if (runCompactor && data.hasModule(BackpackModule.COMPACTOR)) {
+                    if (processCompactor(data)) {
                         modified = true;
                     }
                 }
@@ -162,6 +192,83 @@ public class BackpackTask extends BukkitRunnable {
                 }
             }
         }
+    }
+
+    private boolean processMagnet(Player player, BackpackData data) {
+        boolean absorbedAny = false;
+        ItemStack[] contents = data.getContents();
+
+        for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 5.0, 5.0, 5.0)) {
+            if (!(entity instanceof Item itemEntity)) {
+                continue;
+            }
+
+            if (!itemEntity.isValid() || itemEntity.isDead() || itemEntity.getPickupDelay() > 0) {
+                continue;
+            }
+
+            ItemStack drop = itemEntity.getItemStack();
+            if (drop == null || drop.getType().isAir() || manager.isBackpack(drop)) {
+                continue; // Do not magnet other backpacks
+            }
+
+            if (!canStoreItem(contents, drop)) {
+                continue; // No room for this item
+            }
+
+            // Store into backpack
+            storeItem(contents, drop);
+            itemEntity.remove();
+            absorbedAny = true;
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.3f, 1.4f);
+        }
+
+        return absorbedAny;
+    }
+
+    private boolean processCompactor(BackpackData data) {
+        ItemStack[] contents = data.getContents();
+
+        for (Map.Entry<Material, Material> entry : COMPACT_MAP.entrySet()) {
+            Material raw = entry.getKey();
+            Material block = entry.getValue();
+
+            // Count total raw items in backpack
+            int total = 0;
+            for (ItemStack slot : contents) {
+                if (slot != null && slot.getType() == raw) {
+                    total += slot.getAmount();
+                }
+            }
+
+            if (total >= 9) {
+                ItemStack blockStack = new ItemStack(block, 1);
+                if (canStoreItem(contents, blockStack)) {
+                    // Remove 9 raw items
+                    int toRemove = 9;
+                    for (int i = 0; i < contents.length; i++) {
+                        ItemStack slot = contents[i];
+                        if (slot != null && slot.getType() == raw) {
+                            int take = Math.min(toRemove, slot.getAmount());
+                            slot.setAmount(slot.getAmount() - take);
+                            toRemove -= take;
+                            if (slot.getAmount() <= 0) {
+                                contents[i] = null;
+                            }
+                            if (toRemove <= 0) {
+                                break;
+                            }
+                        }
+                    }
+
+                    // Add 1 block to backpack
+                    storeItem(contents, blockStack);
+                    return true; // Compact 1 batch per cycle
+                }
+            }
+        }
+
+        return false;
     }
 
     private boolean processAutoFood(Player player, BackpackData data) {
@@ -235,7 +342,6 @@ public class BackpackTask extends BukkitRunnable {
         // 2. Check or consume fuel
         int burnPoints = data.getFurnaceBurnTime();
         if (burnPoints <= 0) {
-            // Need to find fuel in contents
             int fuelIndex = -1;
             int fuelYield = 0;
 
@@ -255,7 +361,6 @@ public class BackpackTask extends BukkitRunnable {
                 return false; // No fuel available
             }
 
-            // Consume fuel
             ItemStack fuelStack = contents[fuelIndex];
             if (fuelStack.getType() == Material.LAVA_BUCKET) {
                 contents[fuelIndex] = new ItemStack(Material.BUCKET);
@@ -314,6 +419,7 @@ public class BackpackTask extends BukkitRunnable {
         int remaining = item.getAmount();
         int maxStack = item.getMaxStackSize();
 
+        // 1. Fill existing matching stacks
         for (ItemStack slot : contents) {
             if (slot != null && slot.isSimilar(item) && slot.getAmount() < maxStack) {
                 int add = Math.min(remaining, maxStack - slot.getAmount());

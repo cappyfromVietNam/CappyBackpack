@@ -3,13 +3,13 @@ package com.quocdev.capybackpack.manager;
 import com.quocdev.capybackpack.model.BackpackData;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
-import com.quocdev.capybackpack.util.SmallCaps;
 import com.quocdev.capybackpack.util.TextUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -73,6 +73,14 @@ public class BackpackManager {
         return "module".equals(pdc.get(keyItemType, PersistentDataType.STRING));
     }
 
+    public boolean isRemover(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) {
+            return false;
+        }
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        return "remover".equals(pdc.get(keyItemType, PersistentDataType.STRING));
+    }
+
     public BackpackTier getUpgradeTarget(ItemStack item) {
         if (!isUpgrade(item)) return null;
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
@@ -110,22 +118,14 @@ public class BackpackManager {
         String tierStr = pdc.get(keyTier, PersistentDataType.STRING);
         BackpackTier tier = BackpackTier.fromString(tierStr);
 
-        Set<BackpackModule> modules = EnumSet.noneOf(BackpackModule.class);
         String modStr = pdc.get(keyModules, PersistentDataType.STRING);
-        if (modStr != null && !modStr.isEmpty()) {
-            for (String part : modStr.split(",")) {
-                BackpackModule mod = BackpackModule.fromString(part.trim());
-                if (mod != null) {
-                    modules.add(mod);
-                }
-            }
-        }
+        BackpackModule module = BackpackModule.fromString(modStr);
 
         byte[] rawContents = pdc.get(keyContents, PersistentDataType.BYTE_ARRAY);
         ItemStack[] contents = BackpackData.deserializeContents(rawContents, tier.getSlots());
 
         // Rescue and clean any items trapped in vanilla BundleMeta
-        if (meta instanceof org.bukkit.inventory.meta.BundleMeta bundleMeta && bundleMeta.hasItems()) {
+        if (meta instanceof BundleMeta bundleMeta && bundleMeta.hasItems()) {
             for (ItemStack trapped : bundleMeta.getItems()) {
                 if (trapped != null && !trapped.getType().isAir()) {
                     for (int i = 0; i < contents.length; i++) {
@@ -143,7 +143,7 @@ public class BackpackManager {
         Integer burnTime = pdc.get(keyFurnaceBurn, PersistentDataType.INTEGER);
         int furnaceBurn = burnTime != null ? burnTime : 0;
 
-        return new BackpackData(id, tier, modules, contents, furnaceBurn);
+        return new BackpackData(id, tier, module, contents, furnaceBurn);
     }
 
     public void saveBackpackData(ItemStack item, BackpackData data) {
@@ -160,14 +160,10 @@ public class BackpackManager {
         pdc.set(keyBackpackId, PersistentDataType.STRING, data.getId().toString());
         pdc.set(keyTier, PersistentDataType.STRING, data.getTier().getId());
 
-        if (data.getModules().isEmpty()) {
-            pdc.remove(keyModules);
+        if (data.hasAnyModule()) {
+            pdc.set(keyModules, PersistentDataType.STRING, data.getModule().getId());
         } else {
-            StringJoiner sj = new StringJoiner(",");
-            for (BackpackModule mod : data.getModules()) {
-                sj.add(mod.getId());
-            }
-            pdc.set(keyModules, PersistentDataType.STRING, sj.toString());
+            pdc.remove(keyModules);
         }
 
         pdc.set(keyContents, PersistentDataType.BYTE_ARRAY, data.serializeContents());
@@ -189,7 +185,7 @@ public class BackpackManager {
         pdc.set(keyContents, PersistentDataType.BYTE_ARRAY, new byte[0]);
         pdc.set(keyFurnaceBurn, PersistentDataType.INTEGER, 0);
 
-        BackpackData data = new BackpackData(id, tier, EnumSet.noneOf(BackpackModule.class), new ItemStack[tier.getSlots()], 0);
+        BackpackData data = new BackpackData(id, tier, null, new ItemStack[tier.getSlots()], 0);
         applyBackpackVisuals(meta, data);
 
         item.setItemMeta(meta);
@@ -205,12 +201,9 @@ public class BackpackManager {
         lore.add(TextUtil.parse("<#9E9E9E>ᴛɪᴇʀ  <" + tier.getColorHex() + ">· " + tier.getId()));
         lore.add(TextUtil.parse("<#9E9E9E>sʟᴏᴛs  <#E0E0E0>· " + tier.getSlots()));
 
-        if (!data.getModules().isEmpty()) {
-            StringJoiner sj = new StringJoiner(", ");
-            for (BackpackModule mod : data.getModules()) {
-                sj.add("<" + mod.getColorHex() + ">" + mod.getId() + "<reset>");
-            }
-            lore.add(TextUtil.parse("<#9E9E9E>ᴍᴏᴅᴜʟᴇs  <#E0E0E0>· " + sj));
+        if (data.hasAnyModule()) {
+            BackpackModule mod = data.getModule();
+            lore.add(TextUtil.parse("<#9E9E9E>ᴍᴏᴅᴜʟᴇ  <" + mod.getColorHex() + ">· " + mod.getId()));
         }
 
         lore.add(Component.empty());
@@ -220,7 +213,7 @@ public class BackpackManager {
         meta.lore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
 
-        if (meta instanceof org.bukkit.inventory.meta.BundleMeta bundleMeta) {
+        if (meta instanceof BundleMeta bundleMeta) {
             bundleMeta.setItems(Collections.emptyList());
         }
     }
@@ -266,7 +259,28 @@ public class BackpackManager {
     }
 
     public ItemStack createModule(BackpackModule module) {
-        Material mat = (module == BackpackModule.FURNACE) ? Material.BLAST_FURNACE : Material.GOLDEN_APPLE;
+        Material mat;
+        switch (module) {
+            case FURNACE:
+                mat = Material.BLAST_FURNACE;
+                break;
+            case AUTO_FOOD:
+                mat = Material.GOLDEN_APPLE;
+                break;
+            case MAGNET:
+                mat = Material.COMPASS;
+                break;
+            case RESTOCK:
+                mat = Material.HOPPER;
+                break;
+            case COMPACTOR:
+                mat = Material.PISTON;
+                break;
+            default:
+                mat = Material.IRON_INGOT;
+                break;
+        }
+
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
 
@@ -280,6 +294,26 @@ public class BackpackManager {
         lore.add(TextUtil.parse("<#9E9E9E>ᴇғғᴇᴄᴛ  <#E0E0E0>· " + module.getDescription()));
         lore.add(Component.empty());
         lore.add(TextUtil.parse("<#757575>ᴅʀᴀɢ ᴏɴᴛᴏ ʙᴀᴄᴋᴘᴀᴄᴋ ᴛᴏ ᴀᴘᴘʟʏ"));
+
+        meta.lore(lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public ItemStack createRemover() {
+        ItemStack item = new ItemStack(Material.SHEARS);
+        ItemMeta meta = item.getItemMeta();
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(keyItemType, PersistentDataType.STRING, "remover");
+
+        meta.displayName(TextUtil.parse("<#EF5350>ᴍᴏᴅᴜʟᴇ ʀᴇᴍᴏᴠᴇʀ"));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(TextUtil.parse("<#9E9E9E>ᴜsᴇ  <#E0E0E0>· ᴅᴇsᴛʀᴏʏs ɪɴsᴛᴀʟʟᴇᴅ ᴍᴏᴅᴜʟᴇ"));
+        lore.add(TextUtil.parse("<#9E9E9E>ᴛʏᴘᴇ  <#E0E0E0>· ᴄᴏɴsᴜᴍᴀʙʟᴇ"));
+        lore.add(Component.empty());
+        lore.add(TextUtil.parse("<#757575>ᴅʀᴀɢ ᴏɴᴛᴏ ʙᴀᴄᴋᴘᴀᴄᴋ ᴛᴏ ʀᴇᴍᴏᴠᴇ"));
 
         meta.lore(lore);
         item.setItemMeta(meta);
@@ -306,4 +340,3 @@ public class BackpackManager {
         activeViewers.clear();
     }
 }
-

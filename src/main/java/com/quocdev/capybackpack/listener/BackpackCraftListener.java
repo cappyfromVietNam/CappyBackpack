@@ -125,13 +125,17 @@ public class BackpackCraftListener implements Listener {
             return;
         }
 
-        // Check 2: Backpack + 1 Module Item (Shapeless crafting)
+        // Check 2: Backpack + 1 Module Item (Rule: Only 1 module allowed per backpack)
         if (nonBackpackItems.size() == 1 && manager.isModule(nonBackpackItems.get(0))) {
+            if (data.hasAnyModule()) {
+                inv.setResult(null);
+                return;
+            }
             BackpackModule module = manager.getModuleType(nonBackpackItems.get(0));
-            if (module != null && !data.hasModule(module)) {
+            if (module != null) {
                 ItemStack result = foundBackpack.clone();
                 BackpackData resultData = manager.loadBackpackData(result);
-                resultData.addModule(module);
+                resultData.setModule(module);
                 manager.saveBackpackData(result, resultData);
                 inv.setResult(result);
                 return;
@@ -140,7 +144,21 @@ public class BackpackCraftListener implements Listener {
             return;
         }
 
-        // Check 3: 3x3 Grid - Backpack in center (index 4) + 8 surrounding mineral items (Iron, Gold, Diamond)
+        // Check 3: Backpack + 1 Remover Item (Remove installed module)
+        if (nonBackpackItems.size() == 1 && manager.isRemover(nonBackpackItems.get(0))) {
+            if (!data.hasAnyModule()) {
+                inv.setResult(null);
+                return;
+            }
+            ItemStack result = foundBackpack.clone();
+            BackpackData resultData = manager.loadBackpackData(result);
+            resultData.clearModule();
+            manager.saveBackpackData(result, resultData);
+            inv.setResult(result);
+            return;
+        }
+
+        // Check 4: 3x3 Grid - Backpack in center (index 4) + 8 surrounding mineral items (Iron, Gold, Diamond)
         if (matrix.length == 9 && matrix[4] != null && manager.isBackpack(matrix[4])) {
             Material surroundMat = getSurroundingMaterial(matrix);
             if (surroundMat != null) {

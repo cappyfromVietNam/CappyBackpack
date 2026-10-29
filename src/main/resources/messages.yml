@@ -17,12 +17,16 @@ messages:
   # Modules
   module_installed: "<#A5D6A7>ᴍᴏᴅᴜʟᴇ ɪɴsᴛᴀʟʟᴇᴅ  <#9E9E9E>·  <color>%module%"
   module_already_installed: "<#E57373>ᴍᴏᴅᴜʟᴇ ᴀʟʀᴇᴀᴅʏ ɪɴsᴛᴀʟʟᴇᴅ"
+  module_limit_reached: "<#E57373>ᴏɴʟʏ 1 ᴍᴏᴅᴜʟᴇ ᴀʟʟᴏᴡᴇᴅ"
+  module_removed: "<#A5D6A7>ᴍᴏᴅᴜʟᴇ ʀᴇᴍᴏᴠᴇᴅ"
+  no_module_to_remove: "<#E57373>ɴᴏ ᴍᴏᴅᴜʟᴇ ᴛᴏ ʀᴇᴍᴏᴠᴇ"
   unknown_module: "<#E57373>ᴜɴᴋɴᴏᴡɴ ᴍᴏᴅᴜʟᴇ"
 
   # Commands
   given_backpack: "<#A5D6A7>ɢɪᴠᴇɴ ʙᴀᴄᴋᴘᴀᴄᴋ  <#9E9E9E>·  <color>%tier%"
   given_upgrade: "<#A5D6A7>ɢɪᴠᴇɴ ᴜᴘɢʀᴀᴅᴇ  <#9E9E9E>·  <color>%tier%"
   given_module: "<#A5D6A7>ɢɪᴠᴇɴ ᴍᴏᴅᴜʟᴇ  <#9E9E9E>·  <color>%module%"
+  given_remover: "<#A5D6A7>ɢɪᴠᴇɴ ᴍᴏᴅᴜʟᴇ ʀᴇᴍᴏᴠᴇʀ"
 
   # Help Menu
   help:
@@ -30,5 +34,5 @@ messages:
     get: "<#B0BEC5>/ᴄʙ ɢᴇᴛ [ᴛɪᴇʀ] <#757575>· ɢɪᴠᴇ ʙᴀᴄᴋᴘᴀᴄᴋ"
     upgrade: "<#B0BEC5>/ᴄʙ ᴜᴘɢʀᴀᴅᴇ <ᴛɪᴇʀ> <#757575>· ɢɪᴠᴇ ᴜᴘɢʀᴀᴅᴇ ɪᴛᴇᴍ"
     module: "<#B0BEC5>/ᴄʙ ᴍᴏᴅᴜʟᴇ <ᴛʏᴘᴇ> <#757575>· ɢɪᴠᴇ ᴍᴏᴅᴜʟᴇ ɪᴛᴇᴍ"
+    remover: "<#B0BEC5>/ᴄʙ ʀᴇᴍᴏᴠᴇʀ <#757575>· ɢɪᴠᴇ ᴍᴏᴅᴜʟᴇ ʀᴇᴍᴏᴠᴇʀ"
     reload: "<#B0BEC5>/ᴄʙ ʀᴇʟᴏᴀᴅ <#757575>· ʀᴇʟᴏᴀᴅ ᴄᴏɴғɪɢ"
-

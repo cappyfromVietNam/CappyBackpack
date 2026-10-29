@@ -114,6 +114,20 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                 messageManager.send(player, "given_module", "%module%", mod.getId(), "<color>", "<" + mod.getColorHex() + ">");
                 return true;
 
+            case "remover":
+                if (!sender.hasPermission("cappybackpack.admin")) {
+                    messageManager.send(sender, "no_permission");
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    messageManager.send(sender, "players_only");
+                    return true;
+                }
+                ItemStack remover = manager.createRemover();
+                giveOrDrop(player, remover);
+                messageManager.send(player, "given_remover");
+                return true;
+
             default:
                 sendHelp(sender);
                 return true;
@@ -131,6 +145,7 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(messageManager.get("help.get"));
         sender.sendMessage(messageManager.get("help.upgrade"));
         sender.sendMessage(messageManager.get("help.module"));
+        sender.sendMessage(messageManager.get("help.remover"));
         sender.sendMessage(messageManager.get("help.reload"));
     }
 
@@ -141,7 +156,7 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return filter(Arrays.asList("get", "upgrade", "module", "reload"), args[0]);
+            return filter(Arrays.asList("get", "upgrade", "module", "remover", "reload"), args[0]);
         }
 
         if (args.length == 2) {

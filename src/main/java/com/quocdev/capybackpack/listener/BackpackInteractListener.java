@@ -63,9 +63,9 @@ public class BackpackInteractListener implements Listener {
                 break;
         }
 
-        // 2. Prevent right-clicking a non-upgrade, non-module item onto a backpack
+        // 2. Prevent right-clicking a non-upgrade, non-module, non-remover item onto a backpack
         if (currentIsBackpack && cursor != null && !cursor.getType().isAir()) {
-            if (!manager.isUpgrade(cursor) && !manager.isModule(cursor)) {
+            if (!manager.isUpgrade(cursor) && !manager.isModule(cursor) && !manager.isRemover(cursor)) {
                 if (event.getClick() == ClickType.RIGHT) {
                     event.setCancelled(true);
                     return;
@@ -114,8 +114,8 @@ public class BackpackInteractListener implements Listener {
         ItemStack cursor = event.getCursor();
         ItemStack current = event.getCurrentItem();
 
-        // 1. Drag & Drop Upgrade or Module onto a Backpack
-        if (manager.isBackpack(current) && (manager.isUpgrade(cursor) || manager.isModule(cursor))) {
+        // 1. Drag & Drop Upgrade, Module, or Remover onto a Backpack
+        if (manager.isBackpack(current) && (manager.isUpgrade(cursor) || manager.isModule(cursor) || manager.isRemover(cursor))) {
             event.setCancelled(true);
 
             if (!player.hasPermission("cappybackpack.use")) {
@@ -126,12 +126,12 @@ public class BackpackInteractListener implements Listener {
             BackpackData data = manager.loadBackpackData(current);
             if (data == null) return;
 
+            // Case A: Upgrade
             if (manager.isUpgrade(cursor)) {
                 BackpackTier targetTier = manager.getUpgradeTarget(cursor);
                 if (targetTier == null) return;
 
                 if (data.getTier().getNextTier() == targetTier) {
-                    // Valid upgrade!
                     consumeCursor(event, cursor);
                     data.setTier(targetTier);
                     current.setType(targetTier.getBundleMaterial());
@@ -150,16 +150,33 @@ public class BackpackInteractListener implements Listener {
                 return;
             }
 
+            // Case B: Module Remover
+            if (manager.isRemover(cursor)) {
+                if (data.hasAnyModule()) {
+                    consumeCursor(event, cursor);
+                    data.clearModule();
+                    manager.saveBackpackData(current, data);
+
+                    player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 0.8f, 1.1f);
+                    messageManager.send(player, "module_removed");
+                } else {
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
+                    messageManager.send(player, "no_module_to_remove");
+                }
+                return;
+            }
+
+            // Case C: Module (Rule: Only 1 module allowed!)
             if (manager.isModule(cursor)) {
                 BackpackModule module = manager.getModuleType(cursor);
                 if (module == null) return;
 
-                if (data.hasModule(module)) {
+                if (data.hasAnyModule()) {
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
-                    messageManager.send(player, "module_already_installed");
+                    messageManager.send(player, "module_limit_reached");
                 } else {
                     consumeCursor(event, cursor);
-                    data.addModule(module);
+                    data.setModule(module);
                     manager.saveBackpackData(current, data);
 
                     player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.2f);
@@ -172,11 +189,9 @@ public class BackpackInteractListener implements Listener {
         // 2. Right-click Backpack inside inventory to open GUI
         if (event.getClick() == ClickType.RIGHT && (cursor == null || cursor.getType().isAir())) {
             if (manager.isBackpack(current) && event.getClickedInventory() != null && event.getClickedInventory().getType() == InventoryType.PLAYER) {
-                // Check if not already in custom backpack inventory
                 if (!(event.getView().getTopInventory().getHolder() instanceof com.quocdev.capybackpack.gui.BackpackHolder)) {
                     event.setCancelled(true);
                     int slot = event.getSlot();
-                    // Schedule next tick to avoid inventory client desync
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         ItemStack backpack = player.getInventory().getItem(slot);
                         if (backpack != null && manager.isBackpack(backpack)) {

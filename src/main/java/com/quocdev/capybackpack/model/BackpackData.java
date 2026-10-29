@@ -7,22 +7,20 @@ import org.bukkit.util.io.BukkitObjectOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.EnumSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class BackpackData {
 
     private final UUID id;
     private BackpackTier tier;
-    private final Set<BackpackModule> modules;
+    private BackpackModule module;
     private ItemStack[] contents;
     private int furnaceBurnTime;
 
-    public BackpackData(UUID id, BackpackTier tier, Set<BackpackModule> modules, ItemStack[] contents, int furnaceBurnTime) {
+    public BackpackData(UUID id, BackpackTier tier, BackpackModule module, ItemStack[] contents, int furnaceBurnTime) {
         this.id = id != null ? id : UUID.randomUUID();
         this.tier = tier != null ? tier : BackpackTier.BASE;
-        this.modules = modules != null ? modules : EnumSet.noneOf(BackpackModule.class);
+        this.module = module;
         this.contents = contents != null ? contents : new ItemStack[this.tier.getSlots()];
         this.furnaceBurnTime = furnaceBurnTime;
 
@@ -44,16 +42,24 @@ public class BackpackData {
         resizeContents(tier.getSlots());
     }
 
-    public Set<BackpackModule> getModules() {
-        return modules;
+    public BackpackModule getModule() {
+        return module;
     }
 
-    public boolean hasModule(BackpackModule module) {
-        return modules.contains(module);
+    public void setModule(BackpackModule module) {
+        this.module = module;
     }
 
-    public boolean addModule(BackpackModule module) {
-        return modules.add(module);
+    public void clearModule() {
+        this.module = null;
+    }
+
+    public boolean hasAnyModule() {
+        return module != null;
+    }
+
+    public boolean hasModule(BackpackModule target) {
+        return this.module != null && this.module == target;
     }
 
     public ItemStack[] getContents() {
@@ -107,7 +113,6 @@ public class BackpackData {
              BukkitObjectInputStream bois = new BukkitObjectInputStream(bais)) {
             int length = bois.readInt();
             ItemStack[] loaded = new ItemStack[expectedSize];
-            int readCount = Math.min(length, expectedSize);
             for (int i = 0; i < length; i++) {
                 ItemStack item = (ItemStack) bois.readObject();
                 if (i < expectedSize) {
@@ -121,4 +126,3 @@ public class BackpackData {
         }
     }
 }
-

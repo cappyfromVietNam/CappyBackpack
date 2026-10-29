@@ -6,6 +6,7 @@ import com.quocdev.capybackpack.gui.BackpackHolder;
 import com.quocdev.capybackpack.listener.BackpackCraftListener;
 import com.quocdev.capybackpack.listener.BackpackInteractListener;
 import com.quocdev.capybackpack.listener.BackpackInventoryListener;
+import com.quocdev.capybackpack.listener.BackpackRestockListener;
 import com.quocdev.capybackpack.listener.PlayerJoinListener;
 import com.quocdev.capybackpack.manager.BackpackManager;
 import com.quocdev.capybackpack.manager.BackpackRecipeManager;
@@ -47,6 +48,7 @@ public class CappyBackpackPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BackpackInteractListener(this, backpackManager, messageManager, backpackGUI), this);
         getServer().getPluginManager().registerEvents(new BackpackInventoryListener(this, backpackManager, messageManager), this);
         getServer().getPluginManager().registerEvents(new BackpackCraftListener(backpackManager), this);
+        getServer().getPluginManager().registerEvents(new BackpackRestockListener(this, backpackManager), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(recipeManager), this);
 
         // Register Commands
