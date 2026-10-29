@@ -124,6 +124,22 @@ public class BackpackManager {
         byte[] rawContents = pdc.get(keyContents, PersistentDataType.BYTE_ARRAY);
         ItemStack[] contents = BackpackData.deserializeContents(rawContents, tier.getSlots());
 
+        // Rescue and clean any items trapped in vanilla BundleMeta
+        if (meta instanceof org.bukkit.inventory.meta.BundleMeta bundleMeta && bundleMeta.hasItems()) {
+            for (ItemStack trapped : bundleMeta.getItems()) {
+                if (trapped != null && !trapped.getType().isAir()) {
+                    for (int i = 0; i < contents.length; i++) {
+                        if (contents[i] == null || contents[i].getType().isAir()) {
+                            contents[i] = trapped.clone();
+                            break;
+                        }
+                    }
+                }
+            }
+            bundleMeta.setItems(Collections.emptyList());
+            item.setItemMeta(bundleMeta);
+        }
+
         Integer burnTime = pdc.get(keyFurnaceBurn, PersistentDataType.INTEGER);
         int furnaceBurn = burnTime != null ? burnTime : 0;
 
@@ -203,6 +219,10 @@ public class BackpackManager {
 
         meta.lore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+
+        if (meta instanceof org.bukkit.inventory.meta.BundleMeta bundleMeta) {
+            bundleMeta.setItems(Collections.emptyList());
+        }
     }
 
     public ItemStack createUpgrade(BackpackTier targetTier) {

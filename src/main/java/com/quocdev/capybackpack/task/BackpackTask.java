@@ -314,7 +314,6 @@ public class BackpackTask extends BukkitRunnable {
         int remaining = item.getAmount();
         int maxStack = item.getMaxStackSize();
 
-        // 1. Fill existing matching stacks
         for (ItemStack slot : contents) {
             if (slot != null && slot.isSimilar(item) && slot.getAmount() < maxStack) {
                 int add = Math.min(remaining, maxStack - slot.getAmount());

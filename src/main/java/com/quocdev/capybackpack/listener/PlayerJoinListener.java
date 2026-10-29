@@ -18,3 +18,4 @@ public class PlayerJoinListener implements Listener {
         event.getPlayer().discoverRecipes(recipeManager.getRecipeKeys());
     }
 }
+

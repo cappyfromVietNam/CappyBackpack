@@ -14,6 +14,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -33,6 +34,50 @@ public class BackpackInteractListener implements Listener {
         this.manager = manager;
         this.messageManager = messageManager;
         this.gui = gui;
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPreventVanillaBundleInteractions(InventoryClickEvent event) {
+        ItemStack current = event.getCurrentItem();
+        ItemStack cursor = event.getCursor();
+
+        boolean currentIsBackpack = manager.isBackpack(current);
+        boolean cursorIsBackpack = manager.isBackpack(cursor);
+
+        if (!currentIsBackpack && !cursorIsBackpack) {
+            return;
+        }
+
+        // 1. Cancel all vanilla bundle inventory actions
+        InventoryAction action = event.getAction();
+        switch (action) {
+            case PICKUP_FROM_BUNDLE:
+            case PICKUP_ALL_INTO_BUNDLE:
+            case PICKUP_SOME_INTO_BUNDLE:
+            case PLACE_FROM_BUNDLE:
+            case PLACE_ALL_INTO_BUNDLE:
+            case PLACE_SOME_INTO_BUNDLE:
+                event.setCancelled(true);
+                return;
+            default:
+                break;
+        }
+
+        // 2. Prevent right-clicking a non-upgrade, non-module item onto a backpack
+        if (currentIsBackpack && cursor != null && !cursor.getType().isAir()) {
+            if (!manager.isUpgrade(cursor) && !manager.isModule(cursor)) {
+                if (event.getClick() == ClickType.RIGHT) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
+        // 3. Prevent holding a backpack on cursor and right-clicking any item or slot
+        if (cursorIsBackpack && event.getClick() == ClickType.RIGHT) {
+            event.setCancelled(true);
+            return;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -152,4 +197,3 @@ public class BackpackInteractListener implements Listener {
         }
     }
 }
-
