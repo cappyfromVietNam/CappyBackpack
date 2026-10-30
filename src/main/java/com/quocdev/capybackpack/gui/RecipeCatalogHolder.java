@@ -16,3 +16,4 @@ public class RecipeCatalogHolder implements InventoryHolder {
         return inventory;
     }
 }
+

@@ -16,3 +16,4 @@ public class RecipeViewHolder implements InventoryHolder {
         return inventory;
     }
 }
+

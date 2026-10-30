@@ -6,6 +6,7 @@ import com.quocdev.capybackpack.manager.BackpackManager;
 import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,10 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
@@ -73,6 +71,28 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                 messageManager.send(sender, "config_reloaded");
                 return true;
 
+            case "give":
+                if (!sender.hasPermission("cappybackpack.admin")) {
+                    messageManager.send(sender, "no_permission");
+                    return true;
+                }
+                if (args.length < 3) {
+                    sender.sendMessage(messageManager.get("help.give"));
+                    return true;
+                }
+                Player targetPlayer = Bukkit.getPlayerExact(args[1]);
+                if (targetPlayer == null || !targetPlayer.isOnline()) {
+                    messageManager.send(sender, "player_not_found");
+                    return true;
+                }
+                ItemStack giveItem = parseItem(sender, args, 2);
+                if (giveItem == null) {
+                    return true;
+                }
+                giveOrDrop(targetPlayer, giveItem);
+                messageManager.send(sender, "given_to_player", "%player%", targetPlayer.getName(), "%amount%", String.valueOf(giveItem.getAmount()), "%item%", args[2]);
+                return true;
+
             case "get":
                 if (!sender.hasPermission("cappybackpack.admin")) {
                     messageManager.send(sender, "no_permission");
@@ -82,15 +102,22 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                     messageManager.send(sender, "players_only");
                     return true;
                 }
-                BackpackTier tier = BackpackTier.BASE;
-                if (args.length > 1) {
-                    tier = BackpackTier.fromString(args[1]);
+                if (args.length < 2) {
+                    // Default /cb get gives base backpack
+                    ItemStack defaultBp = manager.createBackpack(BackpackTier.BASE, 1);
+                    giveOrDrop(player, defaultBp);
+                    messageManager.send(player, "given_backpack", "%tier%", BackpackTier.BASE.getId(), "<color>", "<" + BackpackTier.BASE.getColorHex() + ">");
+                    return true;
                 }
-                ItemStack backpack = manager.createBackpack(tier);
-                giveOrDrop(player, backpack);
-                messageManager.send(player, "given_backpack", "%tier%", tier.getId(), "<color>", "<" + tier.getColorHex() + ">");
+                ItemStack getItem = parseItem(sender, args, 1);
+                if (getItem == null) {
+                    return true;
+                }
+                giveOrDrop(player, getItem);
+                messageManager.send(player, "given_backpack", "%tier%", args[1], "<color>", "<#A5D6A7>");
                 return true;
 
+            // Direct Shortcuts for convenience
             case "upgrade":
                 if (!sender.hasPermission("cappybackpack.admin")) {
                     messageManager.send(sender, "no_permission");
@@ -101,17 +128,18 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 2) {
-                    sender.sendMessage(messageManager.get("help.upgrade"));
+                    sender.sendMessage(messageManager.get("help.get"));
                     return true;
                 }
-                BackpackTier targetTier = BackpackTier.fromString(args[1]);
-                if (targetTier == BackpackTier.BASE) {
+                BackpackTier upgradeTier = BackpackTier.fromString(args[1]);
+                if (upgradeTier == BackpackTier.BASE) {
                     messageManager.send(player, "base_has_no_upgrade");
                     return true;
                 }
-                ItemStack upgrade = manager.createUpgrade(targetTier);
+                int upQty = (args.length > 2 && isInteger(args[2])) ? Integer.parseInt(args[2]) : 1;
+                ItemStack upgrade = manager.createUpgrade(upgradeTier, upQty);
                 giveOrDrop(player, upgrade);
-                messageManager.send(player, "given_upgrade", "%tier%", targetTier.getId(), "<color>", "<" + targetTier.getColorHex() + ">");
+                messageManager.send(player, "given_upgrade", "%tier%", upgradeTier.getId(), "<color>", "<" + upgradeTier.getColorHex() + ">");
                 return true;
 
             case "module":
@@ -124,7 +152,7 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 2) {
-                    sender.sendMessage(messageManager.get("help.module"));
+                    sender.sendMessage(messageManager.get("help.get"));
                     return true;
                 }
                 BackpackModule mod = BackpackModule.fromString(args[1]);
@@ -132,7 +160,8 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                     messageManager.send(player, "unknown_module");
                     return true;
                 }
-                ItemStack moduleItem = manager.createModule(mod);
+                int modQty = (args.length > 2 && isInteger(args[2])) ? Integer.parseInt(args[2]) : 1;
+                ItemStack moduleItem = manager.createModule(mod, modQty);
                 giveOrDrop(player, moduleItem);
                 messageManager.send(player, "given_module", "%module%", mod.getId(), "<color>", "<" + mod.getColorHex() + ">");
                 return true;
@@ -146,7 +175,8 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
                     messageManager.send(sender, "players_only");
                     return true;
                 }
-                ItemStack remover = manager.createRemover();
+                int remQty = (args.length > 1 && isInteger(args[1])) ? Integer.parseInt(args[1]) : 1;
+                ItemStack remover = manager.createRemover(remQty);
                 giveOrDrop(player, remover);
                 messageManager.send(player, "given_remover");
                 return true;
@@ -154,6 +184,80 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
             default:
                 sendHelp(sender);
                 return true;
+        }
+    }
+
+    private ItemStack parseItem(CommandSender sender, String[] args, int typeIndex) {
+        String type = args[typeIndex].toLowerCase();
+
+        switch (type) {
+            case "backpack": {
+                BackpackTier tier = BackpackTier.BASE;
+                int amount = 1;
+                if (args.length > typeIndex + 1) {
+                    String next = args[typeIndex + 1];
+                    if (isInteger(next)) {
+                        amount = Math.max(1, Integer.parseInt(next));
+                    } else {
+                        tier = BackpackTier.fromString(next);
+                        if (args.length > typeIndex + 2 && isInteger(args[typeIndex + 2])) {
+                            amount = Math.max(1, Integer.parseInt(args[typeIndex + 2]));
+                        }
+                    }
+                }
+                return manager.createBackpack(tier, amount);
+            }
+            case "upgrade": {
+                if (args.length <= typeIndex + 1) {
+                    sender.sendMessage(messageManager.get("help.get"));
+                    return null;
+                }
+                BackpackTier targetTier = BackpackTier.fromString(args[typeIndex + 1]);
+                if (targetTier == BackpackTier.BASE) {
+                    messageManager.send(sender, "base_has_no_upgrade");
+                    return null;
+                }
+                int amount = 1;
+                if (args.length > typeIndex + 2 && isInteger(args[typeIndex + 2])) {
+                    amount = Math.max(1, Integer.parseInt(args[typeIndex + 2]));
+                }
+                return manager.createUpgrade(targetTier, amount);
+            }
+            case "module": {
+                if (args.length <= typeIndex + 1) {
+                    sender.sendMessage(messageManager.get("help.get"));
+                    return null;
+                }
+                BackpackModule mod = BackpackModule.fromString(args[typeIndex + 1]);
+                if (mod == null) {
+                    messageManager.send(sender, "unknown_module");
+                    return null;
+                }
+                int amount = 1;
+                if (args.length > typeIndex + 2 && isInteger(args[typeIndex + 2])) {
+                    amount = Math.max(1, Integer.parseInt(args[typeIndex + 2]));
+                }
+                return manager.createModule(mod, amount);
+            }
+            case "remover": {
+                int amount = 1;
+                if (args.length > typeIndex + 1 && isInteger(args[typeIndex + 1])) {
+                    amount = Math.max(1, Integer.parseInt(args[typeIndex + 1]));
+                }
+                return manager.createRemover(amount);
+            }
+            default:
+                messageManager.send(sender, "unknown_item_type", "%type%", type);
+                return null;
+        }
+    }
+
+    private boolean isInteger(String s) {
+        try {
+            Integer.parseInt(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 
@@ -166,11 +270,11 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(messageManager.get("help.header"));
         sender.sendMessage(messageManager.get("help.recipe"));
-        sender.sendMessage(messageManager.get("help.get"));
-        sender.sendMessage(messageManager.get("help.upgrade"));
-        sender.sendMessage(messageManager.get("help.module"));
-        sender.sendMessage(messageManager.get("help.remover"));
-        sender.sendMessage(messageManager.get("help.reload"));
+        if (sender.hasPermission("cappybackpack.admin")) {
+            sender.sendMessage(messageManager.get("help.give"));
+            sender.sendMessage(messageManager.get("help.get"));
+            sender.sendMessage(messageManager.get("help.reload"));
+        }
     }
 
     @Override
@@ -180,34 +284,90 @@ public class CappyBackpackCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            List<String> subs = new ArrayList<>(Arrays.asList("recipe", "get", "upgrade", "module", "remover", "reload"));
-            if (!sender.hasPermission("cappybackpack.admin")) {
-                subs = Collections.singletonList("recipe");
+            List<String> subs = new ArrayList<>(Collections.singletonList("recipe"));
+            if (sender.hasPermission("cappybackpack.admin")) {
+                subs.addAll(Arrays.asList("give", "get", "upgrade", "module", "remover", "reload"));
             }
             return filter(subs, args[0]);
         }
 
-        if (args.length == 2) {
-            if ("recipe".equalsIgnoreCase(args[0])) {
-                return filter(new ArrayList<>(recipeGUI.getRecipeMap().keySet()), args[1]);
+        // /cb recipe <entry>
+        if (args.length == 2 && "recipe".equalsIgnoreCase(args[0])) {
+            return filter(new ArrayList<>(recipeGUI.getRecipeMap().keySet()), args[1]);
+        }
+
+        if (!sender.hasPermission("cappybackpack.admin")) {
+            return Collections.emptyList();
+        }
+
+        // /cb give <player> ...
+        if ("give".equalsIgnoreCase(args[0])) {
+            if (args.length == 2) {
+                return filter(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), args[1]);
             }
-            if (!sender.hasPermission("cappybackpack.admin")) {
-                return Collections.emptyList();
+            if (args.length == 3) {
+                return filter(Arrays.asList("backpack", "upgrade", "module", "remover"), args[2]);
             }
-            if ("get".equalsIgnoreCase(args[0])) {
-                return filter(Arrays.stream(BackpackTier.values()).map(BackpackTier::getId).collect(Collectors.toList()), args[1]);
+            if (args.length == 4) {
+                return completeItemArgs(args[2], args[3]);
             }
-            if ("upgrade".equalsIgnoreCase(args[0])) {
-                return filter(Arrays.stream(BackpackTier.values())
-                        .filter(t -> t != BackpackTier.BASE)
-                        .map(BackpackTier::getId)
-                        .collect(Collectors.toList()), args[1]);
-            }
-            if ("module".equalsIgnoreCase(args[0])) {
-                return filter(Arrays.stream(BackpackModule.values()).map(BackpackModule::getId).collect(Collectors.toList()), args[1]);
+            if (args.length == 5) {
+                return Arrays.asList("1", "16", "64");
             }
         }
 
+        // /cb get <type> ...
+        if ("get".equalsIgnoreCase(args[0])) {
+            if (args.length == 2) {
+                return filter(Arrays.asList("backpack", "upgrade", "module", "remover"), args[1]);
+            }
+            if (args.length == 3) {
+                return completeItemArgs(args[1], args[2]);
+            }
+            if (args.length == 4) {
+                return Arrays.asList("1", "16", "64");
+            }
+        }
+
+        // Direct shortcuts
+        if ("upgrade".equalsIgnoreCase(args[0])) {
+            if (args.length == 2) {
+                return filter(Arrays.stream(BackpackTier.values()).filter(t -> t != BackpackTier.BASE).map(BackpackTier::getId).collect(Collectors.toList()), args[1]);
+            }
+            if (args.length == 3) {
+                return Arrays.asList("1", "16", "64");
+            }
+        }
+
+        if ("module".equalsIgnoreCase(args[0])) {
+            if (args.length == 2) {
+                return filter(Arrays.stream(BackpackModule.values()).map(BackpackModule::getId).collect(Collectors.toList()), args[1]);
+            }
+            if (args.length == 3) {
+                return Arrays.asList("1", "16", "64");
+            }
+        }
+
+        if ("remover".equalsIgnoreCase(args[0]) && args.length == 2) {
+            return Arrays.asList("1", "16", "64");
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<String> completeItemArgs(String type, String input) {
+        if ("backpack".equalsIgnoreCase(type)) {
+            return filter(Arrays.stream(BackpackTier.values()).map(BackpackTier::getId).collect(Collectors.toList()), input);
+        }
+        if ("upgrade".equalsIgnoreCase(type)) {
+            return filter(Arrays.stream(BackpackTier.values()).filter(t -> t != BackpackTier.BASE).map(BackpackTier::getId).collect(Collectors.toList()), input);
+        }
+        if ("module".equalsIgnoreCase(type)) {
+            return filter(Arrays.stream(BackpackModule.values()).map(BackpackModule::getId).collect(Collectors.toList()), input);
+        }
+        if ("remover".equalsIgnoreCase(type)) {
+            return Arrays.asList("1", "16", "64");
+        }
         return Collections.emptyList();
     }
 

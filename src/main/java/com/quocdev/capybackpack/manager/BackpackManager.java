@@ -4,6 +4,8 @@ import com.quocdev.capybackpack.model.BackpackData;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
 import com.quocdev.capybackpack.util.TextUtil;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.BundleContents;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -124,7 +126,25 @@ public class BackpackManager {
         byte[] rawContents = pdc.get(keyContents, PersistentDataType.BYTE_ARRAY);
         ItemStack[] contents = BackpackData.deserializeContents(rawContents, tier.getSlots());
 
-        // Rescue and clean any items trapped in vanilla BundleMeta
+        // 1. Rescue from DataComponent BUNDLE_CONTENTS if present
+        if (item.hasData(DataComponentTypes.BUNDLE_CONTENTS)) {
+            BundleContents bc = item.getData(DataComponentTypes.BUNDLE_CONTENTS);
+            if (bc != null) {
+                for (ItemStack trapped : bc.contents()) {
+                    if (trapped != null && !trapped.getType().isAir()) {
+                        for (int i = 0; i < contents.length; i++) {
+                            if (contents[i] == null || contents[i].getType().isAir()) {
+                                contents[i] = trapped.clone();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            item.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
+        }
+
+        // 2. Rescue from BundleMeta if present
         if (meta instanceof BundleMeta bundleMeta && bundleMeta.hasItems()) {
             for (ItemStack trapped : bundleMeta.getItems()) {
                 if (trapped != null && !trapped.getType().isAir()) {
@@ -149,7 +169,7 @@ public class BackpackManager {
     public void saveBackpackData(ItemStack item, BackpackData data) {
         if (item == null || data == null) return;
 
-        // Ensure the bundle item matches the tier color
+        // Ensure bundle material matches tier color
         item.setType(data.getTier().getBundleMaterial());
 
         ItemMeta meta = item.getItemMeta();
@@ -171,10 +191,17 @@ public class BackpackManager {
 
         applyBackpackVisuals(meta, data);
         item.setItemMeta(meta);
+
+        // Crucial: remove BUNDLE_CONTENTS component so vanilla never treats this as a bundle
+        item.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
     }
 
     public ItemStack createBackpack(BackpackTier tier) {
-        ItemStack item = new ItemStack(tier.getBundleMaterial());
+        return createBackpack(tier, 1);
+    }
+
+    public ItemStack createBackpack(BackpackTier tier, int amount) {
+        ItemStack item = new ItemStack(tier.getBundleMaterial(), Math.max(1, amount));
         ItemMeta meta = item.getItemMeta();
         UUID id = UUID.randomUUID();
 
@@ -189,6 +216,9 @@ public class BackpackManager {
         applyBackpackVisuals(meta, data);
 
         item.setItemMeta(meta);
+
+        // Crucial: remove BUNDLE_CONTENTS component completely
+        item.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
         return item;
     }
 
@@ -219,6 +249,10 @@ public class BackpackManager {
     }
 
     public ItemStack createUpgrade(BackpackTier targetTier) {
+        return createUpgrade(targetTier, 1);
+    }
+
+    public ItemStack createUpgrade(BackpackTier targetTier, int amount) {
         Material mat;
         switch (targetTier) {
             case IRON:
@@ -238,7 +272,7 @@ public class BackpackManager {
                 break;
         }
 
-        ItemStack item = new ItemStack(mat);
+        ItemStack item = new ItemStack(mat, Math.max(1, amount));
         ItemMeta meta = item.getItemMeta();
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -259,6 +293,10 @@ public class BackpackManager {
     }
 
     public ItemStack createModule(BackpackModule module) {
+        return createModule(module, 1);
+    }
+
+    public ItemStack createModule(BackpackModule module, int amount) {
         Material mat;
         switch (module) {
             case FURNACE:
@@ -281,7 +319,7 @@ public class BackpackManager {
                 break;
         }
 
-        ItemStack item = new ItemStack(mat);
+        ItemStack item = new ItemStack(mat, Math.max(1, amount));
         ItemMeta meta = item.getItemMeta();
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -301,7 +339,11 @@ public class BackpackManager {
     }
 
     public ItemStack createRemover() {
-        ItemStack item = new ItemStack(Material.SHEARS);
+        return createRemover(1);
+    }
+
+    public ItemStack createRemover(int amount) {
+        ItemStack item = new ItemStack(Material.SHEARS, Math.max(1, amount));
         ItemMeta meta = item.getItemMeta();
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();

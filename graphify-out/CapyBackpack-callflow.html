@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapyBackpack — Complete Call Flow &amp; Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --border: #334155;
+  --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+  --warn: #fbbf24; --err: #f87171; --ok: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 2.4rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--accent), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 1.7rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 1.25rem; margin: 32px 0 12px; color: var(--accent); }
+h4 { font-size: 1.05rem; margin: 20px 0 8px; color: var(--warn); }
+p { margin: 8px 0; color: var(--muted); }
+.subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+.mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; overflow-x: auto; position: relative; }
+.mermaid.is-enhanced { padding: 0; overflow: hidden; min-height: 260px; }
+.mermaid-viewport { padding: 54px 24px 24px; overflow: hidden; cursor: grab; touch-action: none; min-height: 260px; }
+.mermaid-viewport.is-dragging { cursor: grabbing; }
+.mermaid-viewport svg { max-width: none !important; height: auto; transform-origin: 0 0; transition: transform 120ms ease; }
+.mermaid-toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(15,23,42,0.92); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.mermaid-toolbar button, .mermaid-toolbar .zoom-level { height: 28px; min-width: 32px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; color: var(--text); font: 600 0.78rem system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+.mermaid-toolbar button { cursor: pointer; }
+.mermaid-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+.mermaid-toolbar .zoom-level { min-width: 52px; color: var(--muted); background: transparent; }
+.call-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+.call-table th { background: #1a2744; color: var(--accent); text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+.call-table td { padding: 8px 14px; border: 1px solid var(--border); vertical-align: top; }
+.call-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+.tag-async { background: #7c3aed33; color: #a78bfa; }
+.tag-class { background: #05966933; color: var(--ok); }
+.tag-func { background: #2563eb33; color: var(--accent); }
+.tag-cmd { background: #d9770633; color: var(--warn); }
+.tag-endpoint { background: #dc262633; color: var(--err); }
+.tag-hook { background: #db277733; color: #f472b6; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 16px 0; }
+.arrow-chain { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent); padding: 10px; background: rgba(56,189,248,0.06); border-radius: 6px; }
+code { font-family: 'Fira Code', 'Cascadia Code', monospace; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.88em; }
+ul, ol { margin: 8px 0 8px 24px; color: var(--muted); }
+li { margin: 4px 0; }
+a { color: var(--accent); }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+.nav { position: sticky; top: 0; background: var(--bg); z-index: 10; padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9rem; }
+.nav a { text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+@media (max-width: 768px) { .container { padding: 16px; } h1 { font-size: 1.8rem; } }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CapyBackpack — Complete Call Flow &amp; Architecture Documentation</h1>
+<p class="subtitle">Generated from graphify knowledge graph: 411 nodes, 1099 edges, 16 communities. Commit: 9ce2d3c</p>
+
+<div class="nav">
+    <a href="#overview">Architecture Overview</a>
+    <a href="#extract-pipeline">Extraction Pipeline</a>
+    <a href="#build-graph">Graph Build</a>
+    <a href="#cli-skills">CLI &amp; Skill Installers</a>
+    <a href="#gradlew-script-die">Gradlew Script Die</a>
+</div>
+
+<!-- ====== Architecture Overview ====== -->
+<h2 id="overview">1. Architecture Overview</h2>
+
+<div class="mermaid">
+
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    EXTRACT_PIPELINE_5F350230("Extraction Pipeline<br/><small>315 nodes</small>")
+    class EXTRACT_PIPELINE_5F350230 module;
+    BUILD_GRAPH_321CBB04("Graph Build<br/><small>1 nodes</small>")
+    class BUILD_GRAPH_321CBB04 module;
+    CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>91 nodes</small>")
+    class CLI_SKILLS_9964CBB8 module;
+    GRADLEW_SCRIPT_DIE_21E819E1("Gradlew Script Die<br/><small>4 nodes</small>")
+    class GRADLEW_SCRIPT_DIE_21E819E1 module;
+    EXTRACT_PIPELINE_5F350230 -.-> BUILD_GRAPH_321CBB04
+    BUILD_GRAPH_321CBB04 -.-> CLI_SKILLS_9964CBB8
+    CLI_SKILLS_9964CBB8 -.-> GRADLEW_SCRIPT_DIE_21E819E1
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h4>Architecture Layers</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
+      <tr><td>Extraction Pipeline</td><td>315</td><td><code>0, 1, 13, 2, 6, 3, 5, 8, 15</code></td></tr><tr><td>Graph Build</td><td>1</td><td><code>12</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>91</td><td><code>4, 9, 7, 10, 14</code></td></tr><tr><td>Gradlew Script Die</td><td>4</td><td><code>11</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Core Flow</h4>
+    <div class="arrow-chain">Extraction Pipeline -&gt; Graph Build -&gt; CLI &amp; Skill Installers -&gt; Gradlew Script Die</div>
+  </div>
+</div>
+<div class="grid">
+  <div class="card">
+    <h4>Graph Report Highlights</h4>
+    <ul>
+      <li>411 nodes · 1099 edges · 16 communities (11 shown, 5 thin omitted)</li>
+      <li>Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 201 edges (avg confidence: 0.85)</li>
+      <li>Token cost: 0 input · 0 output</li>
+      <li>1. `BackpackManager` - 54 edges</li>
+      <li>2. `BackpackData` - 36 edges</li>
+      <li>3. `BackpackTier` - 36 edges</li>
+    </ul>
+  </div>
+</div>
+<hr>
+<!-- ====== 2. Extraction Pipeline ====== -->
+<h2 id="extract-pipeline">2. Extraction Pipeline</h2>
+<p>Extraction Pipeline groups implementation around com, quocdev, capybackpack, model, mostly in capybackpack/manager/BackpackManager.java, capybackpack/model/BackpackData.java, capybackpack/model/BackpackTier.java. This section covers 315 nodes and 1008 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Extraction Pipeline (315 nodes, 1008 edges)
+    subgraph extract_pipeline_quocdev_capybackpack_CappyBackp_8f95e9b4["quocdev/capybackpack/CappyBackpackPlugin.java"]
+        src_main_java_com_quocdev_capybackpack_cappyback_496590fe("CappyBackpackPlugin.java")
+        src_main_java_com_quocdev_capybackpack_cappyback_4632a95c("CappyBackpackPlugin<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_266d46f1("getRecipeManager()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_1ea4f444("getMessageManager()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_9b51e501("getBackpackGUI()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_98c04a51("getRecipeGUI()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_14e106a8("onEnable()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_970a866d("onDisable()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+        src_main_java_com_quocdev_capybackpack_cappyback_ca57e219("getBackpackManager()<br/><small>quocdev/capybackpack/CappyBackpackPlugin.java</small>")
+    end
+    subgraph extract_pipeline_capybackpack_gui_BackpackGUI_ja_d43822f7["capybackpack/gui/BackpackGUI.java"]
+        src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf("BackpackGUI<br/><small>capybackpack/gui/BackpackGUI.java</small>")
+        src_main_java_com_quocdev_capybackpack_gui_backp_ebe16fbf("BackpackGUI()<br/><small>capybackpack/gui/BackpackGUI.java</small>")
+        src_main_java_com_quocdev_capybackpack_gui_backp_a5c37761("open()<br/><small>capybackpack/gui/BackpackGUI.java</small>")
+    end
+    subgraph extract_pipeline_capybackpack_listener_BackpackI_98801772["capybackpack/listener/BackpackInteractListener.java"]
+        src_main_java_com_quocdev_capybackpack_listener_fc182a83("BackpackInteractListener.java")
+        src_main_java_com_quocdev_capybackpack_listener_c0cca209("onInventoryClick()<br/><small>capybackpack/listener/BackpackInteractListener.java</small>")
+        src_main_java_com_quocdev_capybackpack_listener_1ad99cd9("BackpackInteractListener<br/><small>capybackpack/listener/BackpackInteractListener.java</small>")
+    end
+    src_main_java_com_quocdev_capybackpack_command_c_65c35109("onCommand()<br/><small>capybackpack/command/CappyBackpackCommand.java</small>")
+    src_main_java_com_quocdev_capybackpack_listener_db16b70b("BackpackCraftListener.java")
+    src_main_java_com_quocdev_capybackpack_listener_1f3567bc("BackpackInventoryListener.java")
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_266d46f1
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_1ea4f444
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_9b51e501
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_98c04a51
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_14e106a8
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_970a866d
+    src_main_java_com_quocdev_capybackpack_cappyback_4632a95c -->|method| src_main_java_com_quocdev_capybackpack_cappyback_ca57e219
+    src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf -->|method| src_main_java_com_quocdev_capybackpack_gui_backp_ebe16fbf
+    src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf -->|method| src_main_java_com_quocdev_capybackpack_gui_backp_a5c37761
+    src_main_java_com_quocdev_capybackpack_listener_1ad99cd9 -->|method| src_main_java_com_quocdev_capybackpack_listener_c0cca209
+    src_main_java_com_quocdev_capybackpack_cappyback_14e106a8 -->|calls| src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf
+    src_main_java_com_quocdev_capybackpack_cappyback_496590fe -->|imports| src_main_java_com_quocdev_capybackpack_listener_fc182a83
+    src_main_java_com_quocdev_capybackpack_cappyback_496590fe -->|imports| src_main_java_com_quocdev_capybackpack_listener_1f3567bc
+    src_main_java_com_quocdev_capybackpack_cappyback_496590fe -->|imports| src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf
+    src_main_java_com_quocdev_capybackpack_cappyback_496590fe -->|imports| src_main_java_com_quocdev_capybackpack_listener_db16b70b
+    src_main_java_com_quocdev_capybackpack_cappyback_496590fe -->|imports| src_main_java_com_quocdev_capybackpack_listener_1ad99cd9
+    src_main_java_com_quocdev_capybackpack_listener_fc182a83 -->|imports| src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf
+    src_main_java_com_quocdev_capybackpack_listener_c0cca209 -->|calls| src_main_java_com_quocdev_capybackpack_gui_backp_a5c37761
+    %% Omitted for readability: 297 nodes, 0 edges
+    class src_main_java_com_quocdev_capybackpack_cappyback_496590fe klass;
+    class src_main_java_com_quocdev_capybackpack_cappyback_4632a95c klass;
+    class src_main_java_com_quocdev_capybackpack_cappyback_266d46f1 function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_1ea4f444 function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_9b51e501 function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_98c04a51 function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_14e106a8 function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_970a866d function;
+    class src_main_java_com_quocdev_capybackpack_cappyback_ca57e219 function;
+    class src_main_java_com_quocdev_capybackpack_gui_backp_42cde7bf klass;
+    class src_main_java_com_quocdev_capybackpack_gui_backp_ebe16fbf function;
+    class src_main_java_com_quocdev_capybackpack_gui_backp_a5c37761 function;
+    class src_main_java_com_quocdev_capybackpack_listener_fc182a83 klass;
+    class src_main_java_com_quocdev_capybackpack_listener_c0cca209 entry;
+    class src_main_java_com_quocdev_capybackpack_listener_1ad99cd9 klass;
+    class src_main_java_com_quocdev_capybackpack_command_c_65c35109 entry;
+    class src_main_java_com_quocdev_capybackpack_listener_db16b70b klass;
+    class src_main_java_com_quocdev_capybackpack_listener_1f3567bc klass;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>getBackpackGUI()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small><br><code>getBackpackManager()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small><br><code>getMessageManager()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small><br>+4 more</td>
+  <td>CappyBackpackPlugin node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>BackpackGUI</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>BackpackInteractListener.java</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br><code>CappyBackpackPlugin.java</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small><br><code>onEnable()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><code>BackpackGUI()</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small><br><code>open()</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small></td>
+  <td>BackpackGUI node in capybackpack/gui/BackpackGUI.java.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>BackpackInteractListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>CappyBackpackPlugin.java</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><code>BackpackInteractListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br><code>consumeCursor()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br><code>onEntityPickupItem()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br>+3 more</td>
+  <td>BackpackInteractListener node in capybackpack/listener/BackpackInteractListener.java.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>CappyBackpackPlugin.java</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><code>BackpackInventoryListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>findBackpackItem()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>onInventoryClick()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br>+5 more</td>
+  <td>BackpackInventoryListener node in capybackpack/listener/BackpackInventoryListener.java.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>BackpackRestockListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>CappyBackpackPlugin.java</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><code>BackpackRestockListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small><br><code>onBlockPlace()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small><br><code>onItemConsume()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small><br>+3 more</td>
+  <td>BackpackRestockListener node in capybackpack/listener/BackpackRestockListener.java.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>BackpackManager</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>BackpackCraftListener.java</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackCraftListener.java</small><br><code>BackpackGUI.java</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small><br><code>BackpackInteractListener.java</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br>+7 more</td>
+  <td><code>applyBackpackVisuals()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small><br><code>BackpackManager()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small><br><code>clearAllViewers()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small><br>+18 more</td>
+  <td>BackpackManager node in capybackpack/manager/BackpackManager.java.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>MessageManager</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>BackpackGUI.java</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small><br><code>BackpackInteractListener.java</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small><br><code>BackpackInventoryListener.java</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br>+3 more</td>
+  <td><code>get()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small><br><code>getRaw()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small><br><code>load()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small><br>+3 more</td>
+  <td>MessageManager node in capybackpack/manager/MessageManager.java.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>.getBackpackGUI()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.getBackpackGUI() node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>.getBackpackManager()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.getBackpackManager() node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>.getRecipeManager()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.getRecipeManager() node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>.getMessageManager()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.getMessageManager() node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>.getRecipeGUI()</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CappyBackpackPlugin</code><br><small style="color:var(--muted)">quocdev/capybackpack/CappyBackpackPlugin.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.getRecipeGUI() node in quocdev/capybackpack/CappyBackpackPlugin.java.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>.CappyBackpackCommand()</code><br><small style="color:var(--muted)">capybackpack/command/CappyBackpackCommand.java</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>CappyBackpackCommand</code><br><small style="color:var(--muted)">capybackpack/command/CappyBackpackCommand.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.CappyBackpackCommand() node in capybackpack/command/CappyBackpackCommand.java.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>.BackpackGUI()</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackGUI</code><br><small style="color:var(--muted)">capybackpack/gui/BackpackGUI.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackGUI() node in capybackpack/gui/BackpackGUI.java.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>.BackpackInteractListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInteractListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackInteractListener() node in capybackpack/listener/BackpackInteractListener.java.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>.onEntityPickupItem()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInteractListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInteractListener.java</small></td>
+  <td><code>isBackpack()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td>.onEntityPickupItem() node in capybackpack/listener/BackpackInteractListener.java.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>.BackpackInventoryListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackInventoryListener() node in capybackpack/listener/BackpackInventoryListener.java.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>.onInventoryClose()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><code>saveHolderData()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>unregisterViewer()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td>.onInventoryClose() node in capybackpack/listener/BackpackInventoryListener.java.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>.onInventoryDrag()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><code>isBackpack()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small><br><code>saveHolderData()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>send()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small></td>
+  <td>Supports retrieval-augmented Q&amp;A or streaming chat.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>.onPlayerDeath()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><code>saveHolderData()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>unregisterViewer()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td>.onPlayerDeath() node in capybackpack/listener/BackpackInventoryListener.java.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>.onPlayerQuit()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackInventoryListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small></td>
+  <td><code>saveHolderData()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>unregisterViewer()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td>.onPlayerQuit() node in capybackpack/listener/BackpackInventoryListener.java.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>.BackpackRestockListener()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackRestockListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackRestockListener() node in capybackpack/listener/BackpackRestockListener.java.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>.onBlockPlace()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackRestockListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><code>restockItem()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td>.onBlockPlace() node in capybackpack/listener/BackpackRestockListener.java.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>.onItemConsume()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackRestockListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><code>restockItem()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td>.onItemConsume() node in capybackpack/listener/BackpackRestockListener.java.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>.onShootBow()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackRestockListener</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td><code>restockArrow()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackRestockListener.java</small></td>
+  <td>.onShootBow() node in capybackpack/listener/BackpackRestockListener.java.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>.onInventoryDrag()</code><br><small style="color:var(--muted)">capybackpack/listener/RecipeGUIListener.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>RecipeGUIListener</code><br><small style="color:var(--muted)">capybackpack/listener/RecipeGUIListener.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>Supports retrieval-augmented Q&amp;A or streaming chat.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>.BackpackManager()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackManager</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackManager() node in capybackpack/manager/BackpackManager.java.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>.unregisterViewer()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackManager</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackManager.java</small><br><code>onInventoryClose()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br><code>onPlayerDeath()</code><br><small style="color:var(--muted)">capybackpack/listener/BackpackInventoryListener.java</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>.unregisterViewer() node in capybackpack/manager/BackpackManager.java.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>.BackpackRecipeManager()</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackRecipeManager.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>BackpackRecipeManager</code><br><small style="color:var(--muted)">capybackpack/manager/BackpackRecipeManager.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.BackpackRecipeManager() node in capybackpack/manager/BackpackRecipeManager.java.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>.load()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MessageManager</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small><br><code>MessageManager()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small><br><code>reload()</code><br><small style="color:var(--muted)">capybackpack/manager/MessageManager.java</small></td>
+  <td>No direct outbound edge</td>
+  <td>.load() node in capybackpack/manager/MessageManager.java.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>capybackpack/manager/BackpackManager.java</code></td><td>23 nodes</td></tr>
+<tr><td><code>capybackpack/model/BackpackData.java</code></td><td>18 nodes</td></tr>
+<tr><td><code>capybackpack/model/BackpackTier.java</code></td><td>16 nodes</td></tr>
+<tr><td><code>capybackpack/gui/RecipeEntry.java</code></td><td>13 nodes</td></tr>
+<tr><td><code>capybackpack/model/BackpackModule.java</code></td><td>12 nodes</td></tr>
+<tr><td><code>capybackpack/command/CappyBackpackCommand.java</code></td><td>11 nodes</td></tr>
+<tr><td><code>capybackpack/task/BackpackTask.java</code></td><td>11 nodes</td></tr>
+<tr><td><code>capybackpack/gui/BackpackHolder.java</code></td><td>10 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x283, imports x282, references x229, method x165. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 3. Graph Build ====== -->
+<h2 id="build-graph">3. Graph Build</h2>
+<p>Graph Build groups implementation around buildgradle, mostly in build.gradle. This section covers 1 nodes and 0 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Graph Build (1 nodes, 0 edges)
+    build_80754af9("build.gradle")
+    class build_80754af9 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>build.gradle</code><br><small style="color:var(--muted)">build.gradle</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>build.gradle node in build.gradle.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>build.gradle</code></td><td>1 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: No high-confidence call edges detected. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 4. CLI & Skill Installers ====== -->
+<h2 id="cli-skills">4. CLI &amp; Skill Installers</h2>
+<p>CLI &amp; Skill Installers groups implementation around resources, messagesyml, skillmd, pluginyml, mostly in main/resources/messages.yml, SKILL.md, main/resources/plugin.yml. This section covers 91 nodes and 86 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: CLI &amp; Skill Installers (91 nodes, 86 edges)
+    subgraph cli_skills_main_resources_config_yml_5e41d5cb["main/resources/config.yml"]
+        src_main_resources_config_96054dcf("config.yml")
+        src_main_resources_config_settings_8c67d30d("settings<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_modules_2ceb4546("modules<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_modules_auto_food_8df29c6e("auto_food<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_modules_furnace_21b5ee25("furnace<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_auto_food_enabled_b9586c3d("enabled<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_auto_food_hunger_thres_4eda84a5("hunger_threshold<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_auto_food_check_interv_4489e2d9("check_interval_ticks<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_furnace_check_interval_cd9c8bae("check_interval_ticks<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_furnace_enabled_473f7585("enabled<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_settings_sound_effects_b20a014b("sound_effects<br/><small>main/resources/config.yml</small>")
+        src_main_resources_config_settings_anti_nesting_3eef5fcb("anti_nesting<br/><small>main/resources/config.yml</small>")
+    end
+    subgraph cli_skills_SKILL_md_1c8769a3["SKILL.md"]
+        skill_minecraft_plugin_development_1115e797("Minecraft Plugin Development<br/><small>SKILL.md</small>")
+        skill_core_rules_07b6e53d("Core Rules<br/><small>SKILL.md</small>")
+        skill_implementation_patterns_b06a03df("Implementation Patterns<br/><small>SKILL.md</small>")
+    end
+    subgraph cli_skills_main_resources_messages_yml_5696bf02["main/resources/messages.yml"]
+        src_main_resources_messages_messages_9de89752("messages<br/><small>main/resources/messages.yml</small>")
+        src_main_resources_messages_messages_help_ffdb1759("help<br/><small>main/resources/messages.yml</small>")
+    end
+    src_main_resources_plugin_95007ec0("plugin.yml")
+    src_main_resources_config_96054dcf -->|contains| src_main_resources_config_settings_8c67d30d
+    src_main_resources_config_96054dcf -->|contains| src_main_resources_config_modules_2ceb4546
+    src_main_resources_config_modules_2ceb4546 -->|contains| src_main_resources_config_modules_auto_food_8df29c6e
+    src_main_resources_config_modules_2ceb4546 -->|contains| src_main_resources_config_modules_furnace_21b5ee25
+    src_main_resources_config_modules_auto_food_8df29c6e -->|contains| src_main_resources_config_auto_food_enabled_b9586c3d
+    src_main_resources_config_modules_auto_food_8df29c6e -->|contains| src_main_resources_config_auto_food_hunger_thres_4eda84a5
+    src_main_resources_config_modules_auto_food_8df29c6e -->|contains| src_main_resources_config_auto_food_check_interv_4489e2d9
+    src_main_resources_config_modules_furnace_21b5ee25 -->|contains| src_main_resources_config_furnace_check_interval_cd9c8bae
+    src_main_resources_config_modules_furnace_21b5ee25 -->|contains| src_main_resources_config_furnace_enabled_473f7585
+    src_main_resources_config_settings_8c67d30d -->|contains| src_main_resources_config_settings_sound_effects_b20a014b
+    src_main_resources_config_settings_8c67d30d -->|contains| src_main_resources_config_settings_anti_nesting_3eef5fcb
+    src_main_resources_messages_messages_9de89752 -->|contains| src_main_resources_messages_messages_help_ffdb1759
+    skill_minecraft_plugin_development_1115e797 -->|contains| skill_implementation_patterns_b06a03df
+    skill_minecraft_plugin_development_1115e797 -->|contains| skill_core_rules_07b6e53d
+    %% Omitted for readability: 73 nodes, 0 edges
+    class src_main_resources_config_96054dcf function;
+    class src_main_resources_config_settings_8c67d30d function;
+    class src_main_resources_config_modules_2ceb4546 function;
+    class src_main_resources_config_modules_auto_food_8df29c6e function;
+    class src_main_resources_config_modules_furnace_21b5ee25 function;
+    class src_main_resources_config_auto_food_enabled_b9586c3d function;
+    class src_main_resources_config_auto_food_hunger_thres_4eda84a5 function;
+    class src_main_resources_config_auto_food_check_interv_4489e2d9 function;
+    class src_main_resources_config_furnace_check_interval_cd9c8bae function;
+    class src_main_resources_config_furnace_enabled_473f7585 function;
+    class src_main_resources_config_settings_sound_effects_b20a014b function;
+    class src_main_resources_config_settings_anti_nesting_3eef5fcb function;
+    class skill_minecraft_plugin_development_1115e797 concept;
+    class skill_core_rules_07b6e53d concept;
+    class skill_implementation_patterns_b06a03df concept;
+    class src_main_resources_messages_messages_9de89752 function;
+    class src_main_resources_messages_messages_help_ffdb1759 function;
+    class src_main_resources_plugin_95007ec0 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>messages.yml</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>messages.yml node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>get</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>get node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>give</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>give node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>header</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>header node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>recipe</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>recipe node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>reload</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>reload node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>messages</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>messages node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>backpack_already_open</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>backpack_already_open node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>base_has_no_upgrade</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>base_has_no_upgrade node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>cannot_nest_backpack</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>cannot_nest_backpack node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>config_reloaded</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Reads, resolves, or persists project configuration.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>given_backpack</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>given_backpack node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>given_module</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>given_module node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>given_remover</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>given_remover node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>given_to_player</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>given_to_player node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>given_upgrade</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>given_upgrade node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>help</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>help node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>invalid_amount</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>invalid_amount node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>module_already_installed</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>module_already_installed node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>module_installed</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>module_installed node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>module_limit_reached</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>module_limit_reached node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>module_removed</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>module_removed node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>no_module_to_remove</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>no_module_to_remove node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>no_permission</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>no_permission node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>player_not_found</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>player_not_found node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>players_only</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>players_only node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>unknown_item_type</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>unknown_item_type node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>unknown_module</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>unknown_module node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>upgrade_already_max</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>upgrade_already_max node in main/resources/messages.yml.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>upgrade_applied</code><br><small style="color:var(--muted)">main/resources/messages.yml</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>upgrade_applied node in main/resources/messages.yml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>main/resources/messages.yml</code></td><td>31 nodes</td></tr>
+<tr><td><code>SKILL.md</code></td><td>23 nodes</td></tr>
+<tr><td><code>main/resources/plugin.yml</code></td><td>20 nodes</td></tr>
+<tr><td><code>main/resources/config.yml</code></td><td>12 nodes</td></tr>
+<tr><td><code>AGENT.md</code></td><td>5 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x86. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 5. Gradlew Script Die ====== -->
+<h2 id="gradlew-script-die">5. Gradlew Script Die</h2>
+<p>Gradlew Script Die groups implementation around gradlew, script, die, warn, mostly in gradlew. This section covers 4 nodes and 5 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Gradlew Script Die (4 nodes, 5 edges)
+    gradlew_entry_7c2b69ee("gradlew script<br/><small>gradlew</small>")
+    gradlew_die_e498af22("die()<br/><small>gradlew</small>")
+    gradlew_warn_309ba309("warn()<br/><small>gradlew</small>")
+    gradlew_5bbfa66e("gradlew")
+    gradlew_entry_7c2b69ee -->|calls| gradlew_die_e498af22
+    gradlew_entry_7c2b69ee -->|calls| gradlew_warn_309ba309
+    class gradlew_entry_7c2b69ee function;
+    class gradlew_die_e498af22 function;
+    class gradlew_warn_309ba309 function;
+    class gradlew_5bbfa66e function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>gradlew</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>gradlew node in gradlew.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>gradlew script</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>die()</code><br><small style="color:var(--muted)">gradlew</small><br><code>warn()</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td>gradlew script node in gradlew.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>die()</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>gradlew script</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td>No direct outbound edge</td>
+  <td>die() node in gradlew.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>warn()</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>gradlew script</code><br><small style="color:var(--muted)">gradlew</small></td>
+  <td>No direct outbound edge</td>
+  <td>warn() node in gradlew.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>gradlew</code></td><td>4 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: defines x2, calls x2, contains x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<h2 id="stats">Project Statistics</h2>
+
+<div class="grid">
+  <div class="card">
+    <h4>Graph</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>Nodes</td><td>411</td></tr>
+      <tr><td>Edges</td><td>1099</td></tr>
+      <tr><td>Hyperedges</td><td>0</td></tr>
+      <tr><td>Communities</td><td>16</td></tr>
+      <tr><td>Documented Sections</td><td>4</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Edge Confidence</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>EXTRACTED</td><td>898</td></tr>
+      <tr><td>INFERRED</td><td>201</td></tr>
+      <tr><td>AMBIGUOUS</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
+  <p>CapyBackpack — Architecture Documentation</p>
+  <p>Generated: 2026-10-30 04:16 UTC · graphify callflow-html</p>
+</div>
+
+</div><!-- .container -->
+
+<script>
+(function () {
+  const mermaidConfig = {
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, useMaxWidth: true },
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#334155',
+      lineColor: '#64748b',
+      textColor: '#e2e8f0',
+    }
+  };
+
+  mermaid.initialize(mermaidConfig);
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function enhanceMermaidDiagrams() {
+    document.querySelectorAll('.mermaid').forEach((container) => {
+      if (container.dataset.zoomReady === 'true') return;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      container.dataset.zoomReady = 'true';
+      container.classList.add('is-enhanced');
+
+      const viewport = document.createElement('div');
+      viewport.className = 'mermaid-viewport';
+      svg.parentNode.insertBefore(viewport, svg);
+      viewport.appendChild(svg);
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'mermaid-toolbar';
+      toolbar.innerHTML = [
+        '<button type="button" data-action="zoom-out" title="Zoom out">-</button>',
+        '<span class="zoom-level" data-role="level">100%</span>',
+        '<button type="button" data-action="zoom-in" title="Zoom in">+</button>',
+        '<button type="button" data-action="fit" title="Fit width">Fit</button>',
+        '<button type="button" data-action="reset" title="Reset view">Reset</button>'
+      ].join('');
+      container.insertBefore(toolbar, viewport);
+
+      const state = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+      const level = toolbar.querySelector('[data-role="level"]');
+
+      function applyTransform() {
+        svg.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        level.textContent = `${Math.round(state.scale * 100)}%`;
+      }
+
+      function zoomBy(delta) {
+        state.scale = clamp(state.scale + delta, 0.25, 3);
+        applyTransform();
+      }
+
+      function reset() {
+        state.scale = 1;
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      function fitWidth() {
+        const rawWidth = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
+          ? svg.viewBox.baseVal.width
+          : svg.getBoundingClientRect().width / state.scale;
+        if (!rawWidth) {
+          reset();
+          return;
+        }
+        state.scale = clamp((viewport.clientWidth - 48) / rawWidth, 0.25, 1.4);
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      toolbar.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === 'zoom-in') zoomBy(0.15);
+        if (action === 'zoom-out') zoomBy(-0.15);
+        if (action === 'fit') fitWidth();
+        if (action === 'reset') reset();
+      });
+
+      viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomBy(event.deltaY < 0 ? 0.1 : -0.1);
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startY = event.clientY;
+        state.originX = state.x;
+        state.originY = state.y;
+        viewport.classList.add('is-dragging');
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', (event) => {
+        if (!state.dragging) return;
+        state.x = state.originX + event.clientX - state.startX;
+        state.y = state.originY + event.clientY - state.startY;
+        applyTransform();
+      });
+
+      function endDrag(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        viewport.classList.remove('is-dragging');
+        if (viewport.hasPointerCapture(event.pointerId)) {
+          viewport.releasePointerCapture(event.pointerId);
+        }
+      }
+
+      viewport.addEventListener('pointerup', endDrag);
+      viewport.addEventListener('pointercancel', endDrag);
+      applyTransform();
+    });
+  }
+
+  function renderMermaid() {
+    const result = mermaid.run
+      ? mermaid.run({ querySelector: '.mermaid' })
+      : Promise.resolve();
+    Promise.resolve(result)
+      .then(enhanceMermaidDiagrams)
+      .catch((error) => {
+        console.error('Mermaid render failed:', error);
+        enhanceMermaidDiagrams();
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+})();
+</script>
+
+</body>
+</html>

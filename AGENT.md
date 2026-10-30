@@ -15,6 +15,8 @@
 - thiết kế minimalism style và lối viết title , gui , v.v... đừng như AI
 - Phải check lại dự án có xảy ra bug gì hay không trước khi giao cho tôi
 - Điều gì không nắm rõ phải hỏi liền tôi không được đoán mò trong mọi trường hợp
+- Khi làm phải check qua toàn bộ xương sống của plugin ở D:\Project\CapyBackpack\graphify-out\graph.html
+- Khi giải quyết xong yêu cầu thì phải cập nhật lại graph.html
 
 # Nguồn 
 - Nguồn giúp bạn viết tránh giống AI : https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing

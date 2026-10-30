@@ -1,0 +1,18 @@
+{
+  "0": "BackpackManager",
+  "1": "org.bukkit.inventory.ItemStack",
+  "2": "BackpackModule",
+  "3": "org.bukkit.Material",
+  "4": "messages",
+  "5": "BackpackManager.java",
+  "6": "BackpackTier",
+  "7": "plugin.yml",
+  "8": "org.junit.jupiter.api.Test",
+  "9": "Minecraft Plugin Development",
+  "10": "auto_food",
+  "11": "gradlew",
+  "12": "build.gradle",
+  "13": ".onCommand",
+  "14": "AGENT.md",
+  "15": "BackpackRecipeManager"
+}

@@ -6,6 +6,7 @@ import com.quocdev.capybackpack.manager.MessageManager;
 import com.quocdev.capybackpack.model.BackpackData;
 import com.quocdev.capybackpack.model.BackpackModule;
 import com.quocdev.capybackpack.model.BackpackTier;
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -13,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -48,6 +50,14 @@ public class BackpackInteractListener implements Listener {
             return;
         }
 
+        // Enforce removal of vanilla BUNDLE_CONTENTS component on sight
+        if (currentIsBackpack && current.hasData(DataComponentTypes.BUNDLE_CONTENTS)) {
+            current.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
+        }
+        if (cursorIsBackpack && cursor.hasData(DataComponentTypes.BUNDLE_CONTENTS)) {
+            cursor.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
+        }
+
         // 1. Cancel all vanilla bundle inventory actions
         InventoryAction action = event.getAction();
         switch (action) {
@@ -77,6 +87,22 @@ public class BackpackInteractListener implements Listener {
         if (cursorIsBackpack && event.getClick() == ClickType.RIGHT) {
             event.setCancelled(true);
             return;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityPickupItem(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+
+        // Ensure all backpacks in inventory have BUNDLE_CONTENTS unset so vanilla doesn't auto-vacuum
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && manager.isBackpack(item)) {
+                if (item.hasData(DataComponentTypes.BUNDLE_CONTENTS)) {
+                    item.unsetData(DataComponentTypes.BUNDLE_CONTENTS);
+                }
+            }
         }
     }
 
@@ -166,7 +192,7 @@ public class BackpackInteractListener implements Listener {
                 return;
             }
 
-            // Case C: Module (Rule: Only 1 module allowed!)
+            // Case C: Module (Rule: Only 1 module allowed per backpack)
             if (manager.isModule(cursor)) {
                 BackpackModule module = manager.getModuleType(cursor);
                 if (module == null) return;
