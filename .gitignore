@@ -5,3 +5,8 @@ build/
 .vscode/
 bin/
 
+# Local agent & tooling
+.agents/
+graphify-out/
+AGENT.md
+SKILL.md
